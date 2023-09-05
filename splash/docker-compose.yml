@@ -1,0 +1,17 @@
+version: '3'
+services:
+  splash:
+      image: scrapinghub/splash
+      command: --maxrss 4096 --max-timeout 300
+      container_name: splash
+      ports:
+        - "8050:8050"
+        - "8051:8051"
+        - "5023:5023"
+      volumes:
+        - ./splash_data/filters:/etc/splash/filters
+        - ./splash_data/js-profiles:/etc/splash/js-profiles
+        - ./splash_data/lua_modules:/etc/splash/lua_modules
+        - ./splash_data/proxy-profiles:/etc/splash/proxy-profiles
+      mem_limit: 4608M
+      restart: always
