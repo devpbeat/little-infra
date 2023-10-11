@@ -3,10 +3,10 @@ version: '3.1'
 services:
   wordpress:
     image: wordpress:6.3.0
+    container_name: icare_wordpress
     volumes:
-      - /home/ubuntu/infra/wordpress/wp-content:/var/www/html/wp-content
-    ports:
-      - 8080:80
+      - ./wp-content:/var/www/html/wp-content
+      - ./uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
     environment:
       WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
       WORDPRESS_DB_USER: ${WORDPRESS_DB_USER}
@@ -16,8 +16,9 @@ services:
 
   db:
     image: mysql:8
+    container_name: icare_database
     volumes:
-      - /home/ubuntu/infra/wordpress/mysql-data:/var/lib/mysql
+      - ./mysql-data:/var/lib/mysql
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
