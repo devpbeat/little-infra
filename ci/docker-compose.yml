@@ -1,6 +1,6 @@
 services:
   woodpecker-server:
-    image: woodpeckerci/woodpecker-server:latest
+    image: woodpeckerci/woodpecker-server:v3
     container_name: woodpecker-server
     restart: unless-stopped
     environment:
@@ -31,7 +31,7 @@ services:
       - ci
 
   woodpecker-agent:
-    image: woodpeckerci/woodpecker-agent:latest
+    image: woodpeckerci/woodpecker-agent:v3
     container_name: woodpecker-agent
     restart: unless-stopped
     depends_on:
