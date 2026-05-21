@@ -1,0 +1,9 @@
+---
+# Docker integration settings
+# https://gethomepage.dev/integrations/docker
+
+# Default Docker socket
+# Already configured in services.yaml via socket path
+
+# Swarm support - Homepage can connect to Swarm manager
+# For Swarm services, use server: docker and docker_container: <service_name>

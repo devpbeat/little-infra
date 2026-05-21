@@ -1,0 +1,26 @@
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./config:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - LOG_LEVEL=info
+      - HOMEPAGE_ALLOWED_HOSTS=home.ignitesolutions.click,localhost
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.homepage.rule=Host(`home.ignitesolutions.click`)
+      - traefik.http.routers.homepage.tls=true
+      - traefik.http.routers.homepage.tls.certresolver=myresolver
+      - traefik.http.routers.homepage.middlewares=auth@file
+      - traefik.http.services.homepage.loadbalancer.server.port=3000
+    networks:
+      - traefik_web
+
+networks:
+  traefik_web:
+    external: true

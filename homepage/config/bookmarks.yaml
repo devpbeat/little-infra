@@ -1,0 +1,24 @@
+---
+# Homepage bookmarks
+# https://gethomepage.dev/configs/bookmarks
+
+- Developer:
+  - GitHub:
+    - href: https://github.com/devpbeat/ara-store
+      icon: github.png
+  - Docker Hub:
+    - href: https://hub.docker.com/
+      icon: docker.png
+
+- Monitoring:
+  - Traefik Dashboard:
+    - href: https://dashboard.ignitesolutions.click
+      icon: traefik.png
+  - Portainer:
+    - href: https://portainer.ignitesolutions.click
+      icon: portainer.png
+
+- Storage:
+  - MinIO Console:
+    - href: https://minio-console.ignitesolutions.click
+      icon: minio.png

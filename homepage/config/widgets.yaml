@@ -1,0 +1,23 @@
+---
+# Homepage widgets
+# https://gethomepage.dev/widgets/
+
+# First widget group (shown at top)
+- resources:
+    cpu: true
+    memory: true
+    disk: /
+
+# Second widget group
+- datetime:
+    text_size: xs
+    format:
+      dateStyle: long
+      timeStyle: short
+      hour12: true
+
+# Docker stats widget
+- docker:
+    label: containers
+    queue: 60
+    filter: running

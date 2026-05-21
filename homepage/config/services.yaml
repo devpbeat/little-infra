@@ -1,0 +1,70 @@
+---
+# Homepage services configuration
+# https://gethomepage.dev/configs/services
+
+# Docker integration for autodiscovery
+docker:
+  - socket: /var/run/docker.sock
+
+# Groups for manually defined services
+# Autodiscovered services (via labels) will be merged
+groups:
+  - name: Core Infrastructure
+    services:
+      - traefik:
+          href: https://dashboard.ignitesolutions.click
+          description: Reverse Proxy & SSL
+          icon: traefik.png
+          server: docker
+          container: traefik
+      - portainer:
+          href: https://portainer.ignitesolutions.click
+          description: Container Management
+          icon: portainer.png
+          server: docker
+          container: portainer
+
+  - name: Ara Store
+    services:
+      - ara-api:
+          href: https://api-store.ignitesolutions.click
+          description: E-commerce API
+          icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/scala.png
+          server: docker
+          docker_container: ara_backend
+      - ara-store:
+          href: https://store.ignitesolutions.click
+          description: E-commerce Frontend
+          icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/scala.png
+          server: docker
+          docker_container: ara_frontend
+
+  - name: Development Tools
+    services:
+      - minio:
+          href: https://minio-console.ignitesolutions.click
+          description: Object Storage
+          icon: minio.png
+          server: docker
+          container: minio
+      - infisical:
+          href: https://infisical.ignitesolutions.click
+          description: Secrets Management
+          icon: infisical.png
+          server: docker
+          container: infisical-backend
+
+  - name: Monitoring
+    services:
+      - bugsink:
+          href: https://bugsink.ignitesolutions.click
+          description: Error Tracking
+          icon: bug.png
+          server: docker
+          container: bugsink-web-1
+      - n8n:
+          href: https://automation.ignitesolutions.click
+          description: Workflow Automation
+          icon: n8n.png
+          server: docker
+          container: n8n-n8n-1
