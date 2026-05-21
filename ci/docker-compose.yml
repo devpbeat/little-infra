@@ -1,0 +1,58 @@
+services:
+  woodpecker-server:
+    image: woodpeckerci/woodpecker-server:latest
+    container_name: woodpecker-server
+    restart: unless-stopped
+    environment:
+      - WOODPECKER_OPEN=false
+      - WOODPECKER_HOST=https://${WOODPECKER_HOST}
+      - WOODPECKER_GITHUB=true
+      - WOODPECKER_GITHUB_CLIENT=${WOODPECKER_GITHUB_CLIENT}
+      - WOODPECKER_GITHUB_SECRET=${WOODPECKER_GITHUB_SECRET}
+      - WOODPECKER_AGENT_SECRET=${WOODPECKER_AGENT_SECRET}
+      - WOODPECKER_ORGS=${WOODPECKER_ORGS}
+    volumes:
+      - woodpecker_data:/var/lib/woodpecker
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.woodpecker.rule=Host(`${WOODPECKER_HOST}`)
+      - traefik.http.routers.woodpecker.entrypoints=websecure
+      - traefik.http.routers.woodpecker.tls=true
+      - traefik.http.routers.woodpecker.tls.certresolver=myresolver
+      - traefik.http.routers.woodpecker.middlewares=secure-headers@file
+      - traefik.http.services.woodpecker.loadbalancer.server.port=8000
+      - homepage.group=CI/CD
+      - homepage.name=Woodpecker CI
+      - homepage.href=https://${WOODPECKER_HOST}
+      - homepage.icon=woodpecker.png
+      - homepage.description=Pipeline Runner
+    networks:
+      - web
+      - ci
+
+  woodpecker-agent:
+    image: woodpeckerci/woodpecker-agent:latest
+    container_name: woodpecker-agent
+    restart: unless-stopped
+    depends_on:
+      - woodpecker-server
+    environment:
+      - WOODPECKER_SERVER=woodpecker-server:9000
+      - WOODPECKER_AGENT_SECRET=${WOODPECKER_AGENT_SECRET}
+      - WOODPECKER_MAX_WORKFLOWS=4
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/woodpecker:/tmp/woodpecker
+    networks:
+      - ci
+
+volumes:
+  woodpecker_data:
+
+networks:
+  web:
+    external: true
+    name: traefik_web
+  ci:
+    internal: true

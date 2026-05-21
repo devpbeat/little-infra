@@ -8,21 +8,22 @@ services:
     ports:
       - 80:80
       - 443:443
+    environment:
+      - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik.yml:/traefik.yml:ro
+      - ./dynamic.yml:/dynamic.yml:ro
       - ./acme.json:/acme.json
     labels:
       - traefik.enable=true
-      # Traefik v3 uses 'dashboard' service instead of 'api@internal'
       - traefik.http.routers.traefik.rule=Host(`dashboard.ignitesolutions.click`)
+      - traefik.http.routers.traefik.entrypoints=websecure
       - traefik.http.routers.traefik.tls=true
       - traefik.http.routers.traefik.tls.certresolver=myresolver
       - traefik.http.routers.traefik.service=dashboard@internal
-      - traefik.http.routers.traefik.middlewares=auth@file
-      - traefik.http.services.traefik.loadbalancer.server.port=8080
-      # Homepage autodiscovery labels
+      - traefik.http.routers.traefik.middlewares=auth@file,secure-headers@file
       - homepage.group=Core Infrastructure
       - homepage.name=Traefik
       - homepage.href=https://dashboard.ignitesolutions.click
@@ -36,14 +37,19 @@ services:
     image: portainer/portainer-ce:lts
     container_name: portainer
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - portainer_data:/data
     labels:
       - traefik.enable=true
       - traefik.http.routers.portainer.rule=Host(`portainer.ignitesolutions.click`)
+      - traefik.http.routers.portainer.entrypoints=websecure
+      - traefik.http.routers.portainer.tls=true
       - traefik.http.routers.portainer.tls.certresolver=myresolver
+      - traefik.http.routers.portainer.middlewares=secure-headers@file
       - traefik.http.services.portainer.loadbalancer.server.port=9000
-      # Homepage autodiscovery labels
       - homepage.group=Core Infrastructure
       - homepage.name=Portainer
       - homepage.href=https://portainer.ignitesolutions.click
@@ -51,6 +57,9 @@ services:
       - homepage.description=Container Management
     networks:
       - web
+
+volumes:
+  portainer_data:
 
 networks:
   web:

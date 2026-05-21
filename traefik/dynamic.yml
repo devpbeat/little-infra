@@ -1,0 +1,19 @@
+http:
+  middlewares:
+    auth:
+      basicAuth:
+        users:
+          # Generate with: htpasswd -nb user password
+          - "admin:$apr1$OPVU.p48$2wLwuBgoV/mBq1q6eTfoU0"
+
+    secure-headers:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+        frameDeny: true
+        customFrameOptionsValue: "SAMEORIGIN"
+        permissionsPolicy: "camera=(), microphone=(), geolocation=()"
