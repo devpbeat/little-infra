@@ -21,7 +21,7 @@ ensure_env() {
   fi
 
   local missing=0
-  while IFS= read -r line; do
+  while IFS= read -r line <&3; do
     # Skip comments and blank lines
     [[ "$line" =~ ^# ]] && continue
     [[ -z "$line" ]] && continue
@@ -32,13 +32,13 @@ ensure_env() {
 
     if [[ -z "$current_val" ]]; then
       missing=1
-      read -rp "  Enter value for ${key}: " input
+      read -rp "  Enter value for ${key}: " input </dev/tty
       # Escape special chars for sed
       local escaped
       escaped=$(printf '%s\n' "$input" | sed 's/[[\.*^$()+?{|]/\\&/g')
       sed -i "s|^${key}=.*|${key}=${escaped}|" "$env"
     fi
-  done < "$example"
+  done 3< "$example"
 
   if [[ "$missing" -eq 0 ]]; then
     green "  .env is complete"
