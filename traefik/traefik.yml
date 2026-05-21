@@ -27,13 +27,6 @@ providers:
     watch: true
 
 certificatesResolvers:
-  letsencrypt:
-    acme:
-      email: admin@ignitesolutions.click
-      storage: /acme.json
-      httpChallenge:
-        entryPoint: web
-
   myresolver:
     acme:
       email: admin@ignitesolutions.click
