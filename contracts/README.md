@@ -5,6 +5,9 @@ Markdown contract templates, keep a list of clients/leads, then assign a
 template to a client to auto-generate a document and push it to **DocuSeal**
 for signature via its API. Signed PDFs are archived to **MinIO**.
 
+The admin is themed with [django-unfold](https://unfoldadmin.com/) — a modern
+sidebar, light/dark toggle, and coloured status badges for clients and contracts.
+
 - URL: `https://contracts.ignitesolutions.click`
 - Depends on the already-running `docuseal` and `minio` stacks (reached over
   the shared `traefik_web` network at `http://docuseal:3000` / `http://minio:9000`).
