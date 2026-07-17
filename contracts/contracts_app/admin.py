@@ -2,20 +2,59 @@ import logging
 
 from django.conf import settings
 from django.contrib import admin, messages
+from django.contrib.auth.admin import GroupAdmin, UserAdmin
+from django.contrib.auth.models import Group, User
 from django.db.models import TextField
 from django.utils import timezone
 from django.utils.html import format_html
 from martor.widgets import AdminMartorWidget
+from unfold.admin import ModelAdmin
+from unfold.decorators import display
+from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 
 from .models import Client, Contract, ContractTemplate
 from .services import docuseal, rendering, storage
 
 logger = logging.getLogger("contracts_app")
 
+STATUS_BADGES = {
+    Contract.Status.DRAFT: "info",
+    Contract.Status.SENT: "warning",
+    Contract.Status.VIEWED: "warning",
+    Contract.Status.COMPLETED: "success",
+    Contract.Status.DECLINED: "danger",
+}
+
+
+# Re-skin the built-in auth admin with Unfold's styled forms.
+admin.site.unregister(User)
+admin.site.unregister(Group)
+
+
+@admin.register(User)
+class UnfoldUserAdmin(UserAdmin, ModelAdmin):
+    form = UserChangeForm
+    add_form = UserCreationForm
+    change_password_form = AdminPasswordChangeForm
+
+
+@admin.register(Group)
+class UnfoldGroupAdmin(GroupAdmin, ModelAdmin):
+    pass
+
+
+CLIENT_STATUS_BADGES = {
+    Client.Status.LEAD: "info",
+    Client.Status.NEGOTIATING: "warning",
+    Client.Status.WON: "success",
+    Client.Status.LOST: "danger",
+    Client.Status.ARCHIVED: "",
+}
+
 
 @admin.register(Client)
-class ClientAdmin(admin.ModelAdmin):
-    list_display = ("full_name", "company", "email", "status", "updated_at")
+class ClientAdmin(ModelAdmin):
+    list_display = ("full_name", "company", "email", "status_badge", "updated_at")
     list_filter = ("status",)
     search_fields = ("full_name", "email", "company")
     fields = (
@@ -23,9 +62,13 @@ class ClientAdmin(admin.ModelAdmin):
         "status", "notes",
     )
 
+    @display(description="Status", label=CLIENT_STATUS_BADGES, ordering="status")
+    def status_badge(self, obj):
+        return obj.status, obj.get_status_display()
+
 
 @admin.register(ContractTemplate)
-class ContractTemplateAdmin(admin.ModelAdmin):
+class ContractTemplateAdmin(ModelAdmin):
     list_display = ("name", "description", "is_active", "updated_at")
     list_filter = ("is_active",)
     search_fields = ("name", "description")
@@ -76,9 +119,10 @@ def _generate_and_push(contract) -> None:
 
 
 @admin.register(Contract)
-class ContractAdmin(admin.ModelAdmin):
+class ContractAdmin(ModelAdmin):
     list_display = (
-        "title", "client", "template", "status", "signing_links", "updated_at",
+        "title", "client", "template", "status_badge", "signing_links",
+        "updated_at",
     )
     list_filter = ("status", "template")
     search_fields = ("title", "client__full_name", "client__email")
@@ -101,6 +145,10 @@ class ContractAdmin(admin.ModelAdmin):
             "classes": ("collapse",),
         }),
     )
+
+    @display(description="Status", label=STATUS_BADGES, ordering="status")
+    def status_badge(self, obj):
+        return obj.status, obj.get_status_display()
 
     @admin.display(description="Signing links")
     def signing_links(self, obj):
