@@ -27,6 +27,10 @@ Wildcard certs require `CF_DNS_API_TOKEN` in the Traefik container env. The Clou
 |---|---|
 | `traefik/` | Reverse proxy, TLS, and Portainer |
 | `ci/` | Woodpecker CI (pipeline runner) |
+| `docuseal/` | Document signing (DocuSeal + Postgres) |
+| `minio/` | S3-compatible object storage |
+| `contracts/` | Django admin app for client contracts (DocuSeal + MinIO) |
+| `homepage/` | Services dashboard |
 | `k3s/` | Local WSL development stack (Helm-based) |
 
 Other services (`n8n`, `ara`, `bugsink`, `aso-cjp`, etc.) live in their own repos and connect to the `traefik_web` / `traefik_proxy` network.

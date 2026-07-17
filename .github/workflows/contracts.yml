@@ -1,0 +1,35 @@
+name: contracts
+
+# Builds the contracts image to validate it, then triggers the Woodpecker
+# deploy pipeline that rebuilds + redeploys the stack on the server.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "contracts/**"
+      - ".github/workflows/contracts.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image (validation)
+        run: docker build -t little-infra-contracts:ci ./contracts
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Trigger Woodpecker deploy
+        env:
+          WOODPECKER_TOKEN: ${{ secrets.WOODPECKER_TOKEN }}
+          WOODPECKER_REPO: ${{ vars.WOODPECKER_REPO }}
+        run: |
+          curl -sf -X POST \
+            -H "Authorization: Bearer ${WOODPECKER_TOKEN}" \
+            "https://ci.ignitesolutions.click/api/repos/${WOODPECKER_REPO}/pipelines" \
+            -d '{"branch":"main"}'

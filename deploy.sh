@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-STACKS=(traefik ci)
+STACKS=(traefik ci contracts)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 green() { echo -e "\033[32m$*\033[0m"; }
