@@ -1,0 +1,55 @@
+volumes:
+  docuseal_data:
+  docuseal_db:
+
+services:
+  docuseal-postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - docuseal_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -h localhost -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - default
+
+  docuseal:
+    image: docuseal/docuseal:latest
+    restart: unless-stopped
+    depends_on:
+      docuseal-postgres:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@docuseal-postgres/${POSTGRES_DB}
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE}
+      - FORCE_SSL=false
+    volumes:
+      - docuseal_data:/data
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.docuseal.rule=Host(`sign.ignitesolutions.click`)
+      - traefik.http.routers.docuseal.entrypoints=websecure
+      - traefik.http.routers.docuseal.tls=true
+      - traefik.http.routers.docuseal.tls.certresolver=myresolver
+      - traefik.http.routers.docuseal.middlewares=secure-headers@file
+      - traefik.http.services.docuseal.loadbalancer.server.port=3000
+      - homepage.group=Business
+      - homepage.name=DocuSeal
+      - homepage.href=https://sign.ignitesolutions.click
+      - homepage.icon=docuseal.png
+      - homepage.description=Document Signing
+    networks:
+      - default
+      - traefik_web
+
+networks:
+  default:
+  traefik_web:
+    external: true
