@@ -1,0 +1,55 @@
+volumes:
+  contracts_db:
+
+services:
+  contracts-postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - contracts_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -h localhost -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - default
+
+  contracts:
+    build: .
+    image: little-infra-contracts:latest
+    restart: unless-stopped
+    depends_on:
+      contracts-postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_HOST=contracts-postgres
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.contracts.rule=Host(`contracts.ignitesolutions.click`)
+      - traefik.http.routers.contracts.entrypoints=websecure
+      - traefik.http.routers.contracts.tls=true
+      - traefik.http.routers.contracts.tls.certresolver=myresolver
+      - traefik.http.routers.contracts.middlewares=secure-headers@file
+      - traefik.http.services.contracts.loadbalancer.server.port=8000
+      - homepage.group=Business
+      - homepage.name=Contracts
+      - homepage.href=https://contracts.ignitesolutions.click
+      - homepage.icon=django.png
+      - homepage.description=Client Contract Management
+    networks:
+      - default
+      - traefik_web
+
+networks:
+  default:
+  traefik_web:
+    external: true

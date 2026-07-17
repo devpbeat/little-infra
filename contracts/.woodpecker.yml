@@ -1,0 +1,12 @@
+# Woodpecker pipeline for the contracts stack.
+# Triggered manually (or by GitHub Actions) to rebuild + redeploy on the server.
+steps:
+  - name: deploy
+    image: docker:cli
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    commands:
+      - cd contracts
+      - docker compose up -d --build --remove-orphans
+    when:
+      event: manual
