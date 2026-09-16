@@ -1,0 +1,43 @@
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.badge-active,
+.badge-succeeded,
+.badge-signed {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.badge-trial,
+.badge-sent {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.badge-past_due,
+.badge-failed,
+.badge-canceled,
+.badge-void {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.badge-pending,
+.badge-draft {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.badge-refunded,
+.badge-disabled,
+.badge-neutral {
+  background: rgba(139, 147, 167, 0.15);
+  color: var(--text-dim);
+}
