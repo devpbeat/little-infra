@@ -22,6 +22,8 @@ class Payment(models.Model):
     status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
     gateway = models.CharField(max_length=50, default="pagopar")
     gateway_order_id = models.CharField(max_length=255, blank=True, db_index=True)
+    # Uniqueness is enforced only for non-blank values (blank until checkout
+    # is created at the gateway); see partial constraint in Meta.
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     confirmed_at = models.DateTimeField(null=True, blank=True)
@@ -31,6 +33,11 @@ class Payment(models.Model):
             models.CheckConstraint(
                 condition=models.Q(amount_pyg__gt=0), name="payment_amount_pyg_positive"
             ),
+            models.UniqueConstraint(
+                fields=["gateway", "gateway_order_id"],
+                condition=~models.Q(gateway_order_id=""),
+                name="unique_nonblank_gateway_order_id",
+            ),
         ]
 
     def __str__(self) -> str:
@@ -39,6 +46,10 @@ class Payment(models.Model):
 
 class WebhookEvent(models.Model):
     """Log of every inbound gateway webhook, keyed for idempotency.
+
+    Deliberately NOT tenant-scoped: the gateway does not identify our
+    tenant at receipt time, so events are logged raw and attributed to a
+    tenant only during processing.
 
     The unique constraint on (gateway, event_id) is the idempotency gate:
     a webhook handler must attempt to persist this row BEFORE applying any

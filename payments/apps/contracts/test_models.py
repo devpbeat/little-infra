@@ -27,8 +27,10 @@ class TestContractLifecycle:
         contract.transition_to(ContractStatus.SENT)
         assert contract.status == ContractStatus.SENT
 
+        assert contract.signed_at is None
         contract.transition_to(ContractStatus.SIGNED)
         assert contract.status == ContractStatus.SIGNED
+        assert contract.signed_at is not None
 
     def test_sent_can_be_declined(self, contract):
         contract.transition_to(ContractStatus.GENERATED)

@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 from apps.customers.models import Customer
 
@@ -68,7 +69,11 @@ class Contract(models.Model):
         if target not in _ALLOWED_TRANSITIONS[current]:
             raise InvalidContractTransition(f"Cannot transition contract from {current} to {target}.")
         self.status = target
-        self.save(update_fields=["status", "updated_at"])
+        update_fields = ["status", "updated_at"]
+        if target == ContractStatus.SIGNED and self.signed_at is None:
+            self.signed_at = timezone.now()
+            update_fields.append("signed_at")
+        self.save(update_fields=update_fields)
 
     def __str__(self) -> str:
         return f"Contract#{self.pk} ({self.status})"
