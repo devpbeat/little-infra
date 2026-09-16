@@ -1,0 +1,47 @@
+[project]
+name = "payments"
+version = "0.1.0"
+description = "Payments microservice: B2B subscription billing, contract tracking, and Pagopar payment processing."
+requires-python = ">=3.12"
+dependencies = [
+  "django>=5.0,<6.0",
+  "djangorestframework>=3.15,<4.0",
+  "drf-spectacular>=0.27,<1.0",
+  "psycopg[binary]>=3.1,<4.0",
+  "gunicorn>=22.0,<23.0",
+  "whitenoise>=6.6,<7.0",
+  "python-dotenv>=1.0,<2.0",
+  "pagopar-sdk==0.1.1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0,<9.0",
+  "pytest-django>=4.8,<5.0",
+  "pytest-socket>=0.7,<1.0",
+  "factory-boy>=3.3,<4.0",
+  "freezegun>=1.5,<2.0",
+  "respx>=0.21,<1.0",
+  "ruff>=0.6,<1.0",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = []
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.dev"
+python_files = ["test_*.py"]
+addopts = "--reuse-db --disable-socket --allow-hosts=127.0.0.1,localhost"
+testpaths = ["tests", "apps"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]

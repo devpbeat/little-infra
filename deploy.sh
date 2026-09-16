@@ -60,6 +60,21 @@ deploy_stack() {
   green "  $name deployed"
 }
 
+migrate_payments() {
+  local dir="$SCRIPT_DIR/payments"
+
+  [[ ! -d "$dir" ]] && return
+  [[ ! -f "$dir/docker-compose.yml" ]] && return
+
+  echo ""
+  echo "==> payments migrations"
+  # Run explicitly as a one-off step, never in the container entrypoint:
+  # entrypoint migrations race on multi-replica deploys and make rollbacks
+  # ambiguous (design decision, payments microservice §8).
+  (cd "$dir" && docker compose run --rm payments python manage.py migrate)
+  green "  payments migrations applied"
+}
+
 echo ""
 echo "little-infra deploy"
 echo "==================="
@@ -67,6 +82,17 @@ echo "==================="
 for stack in "${STACKS[@]}"; do
   deploy_stack "$stack"
 done
+
+# payments runs migrations as an explicit step before the service starts
+# serving traffic (never in the container entrypoint — see migrate_payments).
+if [[ -d "$SCRIPT_DIR/payments" && -f "$SCRIPT_DIR/payments/docker-compose.yml" ]]; then
+  echo ""
+  echo "==> payments"
+  ensure_env payments
+  migrate_payments
+  (cd "$SCRIPT_DIR/payments" && docker compose up -d --remove-orphans)
+  green "  payments deployed"
+fi
 
 echo ""
 green "Done."
