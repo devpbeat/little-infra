@@ -22,6 +22,11 @@ services:
       - homepage.description=B2B subscription billing microservice
 
 networks:
+  # Joins the shared `platform` stack network (see design §6 D2 and §8) so
+  # this service can reach the shared `postgres` container by name. The
+  # network is created by platform/docker-compose.yml, NOT by this file —
+  # `platform` must be deployed first, and PLATFORM_NETWORK must resolve to
+  # the same value used there (see payments/DEPLOY.md).
   platform:
     external: true
     name: ${PLATFORM_NETWORK}
