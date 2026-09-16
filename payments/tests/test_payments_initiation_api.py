@@ -41,6 +41,18 @@ class TestPaymentInitiation:
         assert payment.subscription_id == subscription.pk
         assert payment.amount_pyg == subscription.plan.price_pyg
 
+    def test_retry_returns_existing_pending_payment(self, provisioned_app, subscription):
+        _app, raw_key = provisioned_app
+        client = authed_client(raw_key)
+
+        first = client.post("/api/v1/payments", {"subscription": subscription.pk}, format="json")
+        second = client.post("/api/v1/payments", {"subscription": subscription.pk}, format="json")
+
+        assert first.status_code == 201
+        assert second.status_code == 200
+        assert second.data["id"] == first.data["id"]
+        assert Payment.objects.filter(subscription=subscription).count() == 1
+
     def test_rejects_subscription_belonging_to_another_app(
         self, provisioned_app, other_provisioned_app, contract_template, plan
     ):

@@ -12,7 +12,7 @@ from payments_core.auth import ScopedByAppMixin
 from payments_core.gateway import get_payment_gateway
 from payments_core.ports.payment_gateway import ChargeRequest
 
-from .models import Payment, WebhookEvent
+from .models import Payment, PaymentStatus, WebhookEvent
 from .serializers import PaymentInitiationSerializer, PaymentSerializer
 from .services import process_webhook_status
 
@@ -39,6 +39,18 @@ class PaymentInitiationView(APIView):
             customer__app=request.app,
         )
         customer = subscription.customer
+
+        # Idempotent initiation: a retry (double-click, client timeout) must
+        # reuse the open charge instead of minting a second checkout/QR for
+        # the same period.
+        pending = (
+            Payment.objects.filter(subscription=subscription, status=PaymentStatus.PENDING)
+            .exclude(gateway_order_id="")
+            .order_by("-created_at")
+            .first()
+        )
+        if pending is not None:
+            return Response(PaymentSerializer(pending).data, status=status.HTTP_200_OK)
 
         payment = Payment.objects.create(
             subscription=subscription,

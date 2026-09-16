@@ -71,6 +71,23 @@ class TestWebhookConfirmation:
         expected_end = timezone.now() + timezone.timedelta(days=subscription.plan.period_days)
         assert abs((subscription.current_period_end - expected_end).total_seconds()) < 5
 
+    def test_failed_after_confirmed_does_not_flip_status(self, api_client, pending_payment):
+        """A confirmed payment is final: a late 'failed' webhook must be a no-op."""
+        api_client.post(
+            WEBHOOK_URL,
+            data=_payload(pending_payment.gateway_order_id, "confirmed"),
+            content_type="application/json",
+        )
+        response = api_client.post(
+            WEBHOOK_URL,
+            data=_payload(pending_payment.gateway_order_id, "failed", event_id="evt-late-fail"),
+            content_type="application/json",
+        )
+
+        assert response.status_code == 200
+        pending_payment.refresh_from_db()
+        assert pending_payment.status == PaymentStatus.CONFIRMED
+
     def test_failed_status_marks_payment_failed_without_touching_subscription(
         self, api_client, pending_payment
     ):
