@@ -1,0 +1,108 @@
+"""Base Django settings shared by dev and prod. Never import this directly."""
+
+import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "")
+
+ALLOWED_HOSTS = [
+    host.strip() for host in os.environ.get("ALLOWED_HOSTS", "").split(",") if host.strip()
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+
+INSTALLED_APPS = [
+    "django.contrib.contenttypes",
+    "django.contrib.auth",
+    "django.contrib.staticfiles",
+    "rest_framework",
+    "drf_spectacular",
+    # Domain apps are registered here as they land (Slice B onward):
+    # "apps.apps_registry",
+    # "apps.customers",
+    # "apps.contracts",
+    # "apps.subscriptions",
+    # "apps.billing",
+]
+
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "django.middleware.common.CommonMiddleware",
+]
+
+ROOT_URLCONF = "config.urls"
+
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+            ],
+        },
+    },
+]
+
+WSGI_APPLICATION = "config.wsgi.application"
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ.get("POSTGRES_DB", "payments"),
+        "USER": os.environ.get("POSTGRES_USER", "payments"),
+        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "payments"),
+        "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
+        "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+    }
+}
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+LANGUAGE_CODE = "en-us"
+TIME_ZONE = "America/Asuncion"
+USE_I18N = True
+USE_TZ = True
+
+STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
+# NOTE: DEFAULT_AUTHENTICATION_CLASSES and EXCEPTION_HANDLER are wired in
+# Slice D once payments_core.auth.ApiKeyAuthentication and
+# payments_core.exceptions.exception_handler exist (design §5).
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Payments API",
+    "DESCRIPTION": "B2B subscription billing, contract tracking, and payment processing.",
+    "VERSION": "0.1.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+}
+
+# Payment gateway adapter selection (Slice C wires the real value).
+PAYMENT_GATEWAY = os.environ.get(
+    "PAYMENT_GATEWAY", "adapters.fakes.fake_gateway.FakePaymentGateway"
+)
+
+# Contract signer adapter selection (Slice C wires the real value).
+CONTRACT_SIGNER = os.environ.get(
+    "CONTRACT_SIGNER", "adapters.fakes.fake_signer.NullContractSigner"
+)

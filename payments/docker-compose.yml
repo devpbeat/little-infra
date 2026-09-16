@@ -1,0 +1,27 @@
+services:
+  payments:
+    image: ghcr.io/devpbeat/payments:${PAYMENTS_TAG:-latest}
+    container_name: payments
+    restart: unless-stopped
+    env_file: .env
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - platform
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.payments.rule=Host(`payments.ignitesolutions.click`)
+      - traefik.http.routers.payments.entrypoints=websecure
+      - traefik.http.routers.payments.tls=true
+      - traefik.http.routers.payments.tls.certresolver=myresolver
+      - traefik.http.routers.payments.middlewares=secure-headers@file
+      - traefik.http.services.payments.loadbalancer.server.port=8000
+      - homepage.group=Services
+      - homepage.name=Payments
+      - homepage.href=https://payments.ignitesolutions.click
+      - homepage.description=B2B subscription billing microservice
+
+networks:
+  platform:
+    external: true
+    name: ${PLATFORM_NETWORK}
