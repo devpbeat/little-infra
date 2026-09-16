@@ -24,6 +24,11 @@ class Payment(models.Model):
     gateway_order_id = models.CharField(max_length=255, blank=True, db_index=True)
     # Uniqueness is enforced only for non-blank values (blank until checkout
     # is created at the gateway); see partial constraint in Meta.
+    # Checkout URL / QR payload returned by the gateway at charge creation
+    # (Slice E1). Stored verbatim as text — its shape is gateway-specific and
+    # opaque to this model; consumers re-fetch via the API rather than
+    # parsing it here.
+    checkout_url = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     confirmed_at = models.DateTimeField(null=True, blank=True)

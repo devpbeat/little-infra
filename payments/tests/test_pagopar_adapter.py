@@ -13,7 +13,7 @@ from httpx import Response
 
 from adapters.pagopar.adapter import PagoparAdapter
 from adapters.pagopar.signature import compute_candidate_signature, verify_signature
-from payments_core.ports.payment_gateway import ChargeStatus
+from payments_core.ports.payment_gateway import ChargeRequest, ChargeStatus
 
 
 @pytest.fixture(autouse=True)
@@ -21,6 +21,63 @@ def pagopar_env(monkeypatch):
     monkeypatch.setenv("PAGOPAR_PUBLIC_KEY", "test-public")
     monkeypatch.setenv("PAGOPAR_PRIVATE_KEY", "test-private")
     monkeypatch.setenv("PAGOPAR_BASE_URL", "https://api.pagopar.test")
+
+
+def _sample_charge_request() -> ChargeRequest:
+    return ChargeRequest(
+        order_id="42",
+        amount_pyg=500_000,
+        description="Standard Monthly",
+        buyer_name="Ada Lovelace",
+        buyer_email="ada@example.com",
+        buyer_document="1234567",
+        buyer_phone="+595981000000",
+    )
+
+
+class TestCreateCharge:
+    @respx.mock
+    def test_returns_gateway_order_id_and_checkout_url(self):
+        respx.post("https://api.pagopar.test/api/comercios/2.0/iniciar-transaccion").mock(
+            return_value=Response(
+                200,
+                json={
+                    "respuesta": True,
+                    "resultado": [{"hash_pedido": "hash-abc", "url_pago": "https://pagopar.test/pay/hash-abc"}],
+                },
+            )
+        )
+        adapter = PagoparAdapter()
+
+        result = adapter.create_charge(_sample_charge_request())
+
+        assert result.gateway_order_id == "hash-abc"
+        assert result.checkout_url == "https://pagopar.test/pay/hash-abc"
+
+    @respx.mock
+    def test_accepts_dict_shaped_resultado(self):
+        respx.post("https://api.pagopar.test/api/comercios/2.0/iniciar-transaccion").mock(
+            return_value=Response(
+                200,
+                json={"respuesta": True, "resultado": {"hash_pedido": "hash-xyz", "url": "https://pagopar.test/x"}},
+            )
+        )
+        adapter = PagoparAdapter()
+
+        result = adapter.create_charge(_sample_charge_request())
+
+        assert result.gateway_order_id == "hash-xyz"
+        assert result.checkout_url == "https://pagopar.test/x"
+
+    @respx.mock
+    def test_raises_loudly_when_no_order_hash_is_present(self):
+        respx.post("https://api.pagopar.test/api/comercios/2.0/iniciar-transaccion").mock(
+            return_value=Response(200, json={"respuesta": True, "resultado": {}})
+        )
+        adapter = PagoparAdapter()
+
+        with pytest.raises(ValueError):
+            adapter.create_charge(_sample_charge_request())
 
 
 class TestGetChargeStatus:
