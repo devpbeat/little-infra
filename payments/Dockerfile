@@ -32,7 +32,10 @@ RUN mkdir -p /app/staticfiles \
 
 USER app
 
-RUN python manage.py collectstatic --noinput
+# Build-time-only values: collectstatic needs settings to load but never
+# touches the database or real secrets.
+RUN DJANGO_SECRET_KEY=build-time-only ALLOWED_HOSTS=localhost \
+    python manage.py collectstatic --noinput
 
 EXPOSE 8000
 
