@@ -1,0 +1,152 @@
+# Payments — Deploy Guide
+
+This document is the Slice F deliverable: everything needed to take
+`payments/` from "code merged" to "serving live traffic" on the VPS.
+
+## 1. Prerequisites on the server
+
+- `platform` stack already deployed (`platform/docker-compose.yml`) — this
+  is where the shared Postgres container and the `platform` Docker network
+  live. `payments` does not create its own database container or network;
+  it joins the existing ones (design §6 D2, §8).
+- `traefik` stack already deployed and routing `*.ignitesolutions.click`
+  with the `myresolver` cert resolver.
+- DNS: `payments.ignitesolutions.click` must resolve to the VPS before
+  first deploy, or the `myresolver` ACME HTTP-01 challenge will fail and
+  Traefik will not obtain a certificate.
+
+## 2. Environment
+
+`deploy.sh` auto-creates `payments/.env` from `payments/env.example` on
+first run and prompts interactively for any empty value (same mechanism
+used for `traefik` and `ci`). To prepare it manually instead:
+
+```bash
+cp payments/env.example payments/.env
+chmod 600 payments/.env
+```
+
+Required values — see inline comments in `env.example` for the full list;
+the ones that need operator attention before first deploy:
+
+| Var | Source |
+|---|---|
+| `PLATFORM_NETWORK` | Must match `platform/.env`'s `PLATFORM_NETWORK` (default `platform`). Used by docker compose for network interpolation, not just app config — get this wrong and the container cannot reach Postgres or Traefik. |
+| `DJANGO_SECRET_KEY` | `python -c "import secrets; print(secrets.token_urlsafe(50))"` |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` | Create a dedicated role + database on the shared Postgres container first (see §3) — do not reuse the `platform` stack's own Postgres credentials. |
+| `PAGOPAR_PUBLIC_KEY` / `PAGOPAR_PRIVATE_KEY` | Issued by Pagopar for the production commerce account. **`PAGOPAR_PRIVATE_KEY` fails closed** — `PagoparAdapter.verify_webhook` rejects every webhook (401) when this is empty or unset (Slice E2, review finding W4). Leaving it blank does not mean "accept all webhooks"; it means the service is unreachable via webhook until it's set. |
+| `WEBHOOK_PATH_TOKEN` | Random token, defense-in-depth path segment (design §5, layer 2 — not the real security control, that's the signature check above). |
+| `DJANGO_SUPERUSER_USERNAME/EMAIL/PASSWORD` | Optional. If all three are set, `entrypoint.sh` creates the admin user on first boot (idempotent — tolerates "already exists"). |
+| `ANTHROPIC_API_KEY` / `ANTHROPIC_MODEL` | Placeholders for the upcoming contract-template generator (not wired into this slice — no code path reads them yet). `ANTHROPIC_MODEL` defaults to `claude-opus-5`. |
+| `DOCUSIGN_*` | Optional in v1 — `CONTRACT_SIGNER` defaults to `NullContractSigner`, so these can stay blank until DocuSign onboarding lands. |
+
+## 3. Database bootstrap (one-time, before first deploy)
+
+The `payments` database and its dedicated role must exist on the shared
+Postgres container before the app's migration step can run:
+
+```bash
+docker exec -it postgres psql -U "$PLATFORM_POSTGRES_USER" -c \
+  "CREATE ROLE payments WITH LOGIN PASSWORD '<generate-a-password>';"
+docker exec -it postgres psql -U "$PLATFORM_POSTGRES_USER" -c \
+  "CREATE DATABASE payments OWNER payments;"
+```
+
+Use the generated password as `POSTGRES_PASSWORD` in `payments/.env`, and
+`payments` as `POSTGRES_USER`/`POSTGRES_DB`. The role owns only its own
+database — no access to `n8n`'s schema or vice versa.
+
+## 4. First deploy
+
+```bash
+./deploy.sh
+```
+
+`deploy.sh` already has a guarded payments step (`migrate_payments`) that
+runs `docker compose run --rm payments python manage.py migrate` as an
+explicit one-off command before `docker compose up -d`, matching design §8:
+migrations are never run as part of the container entrypoint's race-prone
+path on scale-up. Note this only fully holds for scaled/multi-replica
+deploys — `entrypoint.sh` also calls `python manage.py migrate --noinput`
+on every container boot (harmless here since Django migrations are
+idempotent and this stack runs a single replica), so the explicit
+`deploy.sh` step is the authoritative, auditable migration point and the
+entrypoint call is a safety net, not a race condition in the current
+single-replica setup.
+
+This also creates the superuser (if configured) and starts the service
+joined to the `platform` network with Traefik labels already present in
+`docker-compose.yml`.
+
+## 5. Woodpecker deploy trigger (task F5)
+
+This repo does not yet contain a `.woodpecker.yml` for `payments/` — add
+one when `payments/` moves to its own repository or gets its own GitHub
+Actions build/push job, following the root `README.md`'s documented
+pattern (`## CI/CD with Woodpecker`):
+
+1. GitHub Actions builds `payments/Dockerfile` (`linux/arm64`), pushes to
+   `ghcr.io/devpbeat/payments:<tag>`, gated on `payments/**` path filter so
+   infra-only commits don't trigger a rebuild, and gated on the
+   pytest + ruff job passing first.
+2. On success, the workflow's deploy step calls the Woodpecker API to
+   trigger the pipeline:
+   ```yaml
+   - name: Trigger deploy
+     run: |
+       curl -s -X POST \
+         -H "Authorization: Bearer ${{ secrets.WOODPECKER_TOKEN }}" \
+         https://ci.ignitesolutions.click/api/repos/<org>/<repo>/pipelines
+   ```
+   `WOODPECKER_TOKEN` is a GitHub Actions repo secret, not a `payments/.env`
+   value — it authenticates against the Woodpecker server's API, it does
+   not run on the payments container.
+3. The `.woodpecker.yml` pipeline itself just runs `sh ./deploy.sh` on
+   `event: manual` (or `event: deployment` if using a dedicated deploy
+   trigger), matching every other stack in this repo.
+4. `WOODPECKER_ADMIN` (already configured for the `ci` stack, see
+   `ci/env.example`) grants the account that owns the GitHub App admin
+   rights in Woodpecker — no payments-specific Woodpecker config is needed
+   beyond activating the repo in the Woodpecker UI once.
+
+## 6. Release checklist (manual, before declaring the service live)
+
+These two items are carried risks from the design (§10, open risks) and
+cannot be automated because they require a real Pagopar account:
+
+- [ ] **Minimum-amount live Pagopar transaction.** Run one real payment
+  through `POST /api/v1/payments` end-to-end with the smallest viable
+  `amount_pyg` on a real (non-fake) `Plan`, using the production
+  `PagoparAdapter`. Confirm: the checkout URL/QR is usable, the payment
+  reaches `confirmed` status, and `Subscription.current_period_end`
+  advances correctly. This is the only real-gateway validation available
+  — automated tests only ever exercise `FakePaymentGateway` or
+  `respx`-mocked fixtures (design §9), since sandbox availability was
+  never confirmed by the Task 0 spike.
+- [ ] **Webhook signature validation against a real Pagopar callback.**
+  Confirm Pagopar's actual webhook request (headers + body shape) is
+  correctly verified by `PagoparAdapter.verify_webhook` — the signature
+  algorithm implemented in `adapters/pagopar/signature.py` was derived by
+  analogy from Pagopar's historical MD5/SHA-token pattern, not confirmed
+  against current API docs (Task 0 spike scope, design §4). If this
+  transaction's real webhook is rejected (401) or, worse, silently
+  mismatched, treat `signature.py` as broken and fix before any customer
+  relies on automatic payment confirmation.
+- [ ] Confirm `PAGOPAR_PRIVATE_KEY` is non-empty in the live `.env` (see
+  §2 — an empty key means every webhook is rejected, not accepted).
+- [ ] Confirm `payments.ignitesolutions.click` serves a valid TLS cert
+  (Traefik + `myresolver`) and `GET /api/v1/health` returns 200.
+- [ ] Confirm `advance_billing` (design §6 D4) is scheduled via cron or a
+  systemd timer on the VPS — this is bookkeeping, not correctness (see
+  §6 D4: entitlement is computed on read), but a lost cron means
+  `past_due` transitions and `next_due_date` accounting drift silently.
+
+## 7. Rollback
+
+`payments` is a single service with no in-place schema-destructive
+migrations planned for v1. Rollback is: `docker pull` the previous tag,
+`docker compose up -d` with `PAYMENTS_TAG=<previous-sha>` in `.env`. New
+migrations are additive-only by convention; if a future migration is not
+backward-compatible with the previous image, that migration must ship as
+its own two-step (expand/contract) deploy — not covered by this slice
+since no such migration exists yet.
