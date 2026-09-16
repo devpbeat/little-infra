@@ -28,6 +28,7 @@ WORKDIR /app
 COPY . .
 
 RUN mkdir -p /app/staticfiles \
+    && chmod +x /app/entrypoint.sh \
     && chown -R app:app /app
 
 USER app
@@ -38,6 +39,8 @@ RUN DJANGO_SECRET_KEY=build-time-only ALLOWED_HOSTS=localhost \
     python manage.py collectstatic --noinput
 
 EXPOSE 8000
+
+ENTRYPOINT ["/app/entrypoint.sh"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8000/api/v1/health || exit 1
