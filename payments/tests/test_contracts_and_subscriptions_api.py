@@ -136,6 +136,23 @@ def test_cross_tenant_entitlement_denied(provisioned_app, other_provisioned_app)
     assert response.status_code == 404
 
 
+def test_cross_tenant_contract_transition_denied(provisioned_app, other_provisioned_app):
+    """App A must never advance app B's contract lifecycle by id."""
+    app_a, key_a = provisioned_app
+    app_b, key_b = other_provisioned_app
+    _signup(key_a, "cust-a")
+    _signup(key_b, "cust-b")
+
+    contract_b = Contract.objects.get(customer__app=app_b)
+    client_a = authed_client(key_a)
+    response = client_a.post(
+        f"/api/v1/contracts/{contract_b.id}/transition/", {"status": "sent"}
+    )
+    assert response.status_code == 404
+    contract_b.refresh_from_db()
+    assert contract_b.status == ContractStatus.GENERATED
+
+
 def test_openapi_schema_lists_key_endpoints(provisioned_app):
     _, raw_key = provisioned_app
     client = authed_client(raw_key)

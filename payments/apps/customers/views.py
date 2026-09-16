@@ -1,4 +1,4 @@
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -38,11 +38,19 @@ class SignupView(APIView):
                 status=status.HTTP_409_CONFLICT,
             )
 
-        with transaction.atomic():
-            customer = Customer.objects.create(app=app, **serializer.validated_data)
-            contract = Contract.objects.create(customer=customer, template=app.contract_template)
-            contract.transition_to(ContractStatus.GENERATED)
-            Subscription.start_trial(customer, app.default_plan, trial_days=app.trial_days)
+        try:
+            with transaction.atomic():
+                customer = Customer.objects.create(app=app, **serializer.validated_data)
+                contract = Contract.objects.create(customer=customer, template=app.contract_template)
+                contract.transition_to(ContractStatus.GENERATED)
+                Subscription.start_trial(customer, app.default_plan, trial_days=app.trial_days)
+        except IntegrityError:
+            # A concurrent signup with the same external_ref won the race;
+            # return the row it created (idempotent behavior).
+            existing = Customer.objects.get(
+                app=app, external_ref=serializer.validated_data["external_ref"]
+            )
+            return Response(CustomerSerializer(existing).data, status=status.HTTP_200_OK)
 
         return Response(CustomerSerializer(customer).data, status=status.HTTP_201_CREATED)
 
