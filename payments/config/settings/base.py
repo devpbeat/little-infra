@@ -88,13 +88,13 @@ STORAGES = {
     },
 }
 
-# NOTE: DEFAULT_AUTHENTICATION_CLASSES and EXCEPTION_HANDLER are wired in
-# Slice D once payments_core.auth.ApiKeyAuthentication and
-# payments_core.exceptions.exception_handler exist (design §5).
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [],
-    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "DEFAULT_AUTHENTICATION_CLASSES": ["payments_core.auth.ApiKeyAuthentication"],
+    "DEFAULT_PERMISSION_CLASSES": ["payments_core.auth.IsAuthenticatedApp"],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "EXCEPTION_HANDLER": "payments_core.exceptions.exception_handler",
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 50,
 }
 
 SPECTACULAR_SETTINGS = {

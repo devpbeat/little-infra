@@ -19,6 +19,26 @@ class ConsumingApp(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # Used by the signup endpoint (Slice D1) to autogenerate a Contract and
+    # start a Subscription without the caller having to specify either.
+    # Nullable so an app can be provisioned before its template/plan exist;
+    # signup fails loudly (not silently) if either is unset when called.
+    contract_template = models.ForeignKey(
+        "contracts.ContractTemplate",
+        on_delete=models.PROTECT,
+        related_name="consuming_apps",
+        null=True,
+        blank=True,
+    )
+    default_plan = models.ForeignKey(
+        "subscriptions.Plan",
+        on_delete=models.PROTECT,
+        related_name="consuming_apps",
+        null=True,
+        blank=True,
+    )
+    trial_days = models.PositiveIntegerField(default=30)
+
     def __str__(self) -> str:
         return self.name
 

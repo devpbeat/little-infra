@@ -42,15 +42,25 @@ class Subscription(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     @classmethod
-    def start_trial(cls, customer: Customer, plan: Plan, now: datetime.datetime | None = None) -> "Subscription":
-        """Create a Subscription in `trialing` status with a 30-day trial window."""
+    def start_trial(
+        cls,
+        customer: Customer,
+        plan: Plan,
+        now: datetime.datetime | None = None,
+        trial_days: int = TRIAL_DURATION_DAYS,
+    ) -> "Subscription":
+        """Create a Subscription in `trialing` status with a `trial_days`-day trial window.
+
+        `trial_days` defaults to the global 30-day constant but callers (e.g. the
+        signup endpoint) may pass a per-`ConsumingApp` override.
+        """
         now = now or timezone.now()
         return cls.objects.create(
             customer=customer,
             plan=plan,
             status=SubscriptionStatus.TRIALING,
             trial_start=now,
-            trial_end=now + datetime.timedelta(days=TRIAL_DURATION_DAYS),
+            trial_end=now + datetime.timedelta(days=trial_days),
         )
 
     def __str__(self) -> str:
