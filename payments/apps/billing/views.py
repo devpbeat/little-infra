@@ -17,6 +17,30 @@ from .serializers import PaymentInitiationSerializer, PaymentSerializer
 from .services import process_webhook_status
 
 
+class PaymentResultView(APIView):
+    """`GET /api/v1/payments/result/<gateway_order_id>` — public, minimal.
+
+    The Pagopar checkout redirects the payer's browser here (via the
+    dashboard's result page) with the order hash. Unauthenticated by
+    design: the hash is an opaque, gateway-generated capability token,
+    and the response exposes ONLY the payment status — no amounts, no
+    customer data, nothing enumerable.
+    """
+
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, gateway_order_id: str):
+        payment = (
+            Payment.objects.filter(gateway="pagopar", gateway_order_id=gateway_order_id)
+            .only("status")
+            .first()
+        )
+        if payment is None:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"status": payment.status})
+
+
 class PaymentInitiationView(APIView):
     """`POST /api/v1/payments` (spec: payment-processing, "Payment Initiation").
 

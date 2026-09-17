@@ -63,7 +63,20 @@ export function PaymentDetailPage() {
               <div className="stat-card-label">Checkout URL</div>
               <div>
                 {payment.checkout_url ? (
-                  <a href={payment.checkout_url} target="_blank" rel="noreferrer">
+                  <a
+                    href={payment.checkout_url}
+                    rel="noreferrer"
+                    onClick={(e) => {
+                      // Open Pagopar in a small popup; the href stays as a
+                      // plain-link fallback for popup blockers.
+                      const win = window.open(
+                        payment.checkout_url!,
+                        "pagopar",
+                        "width=480,height=760,popup"
+                      );
+                      if (win) e.preventDefault();
+                    }}
+                  >
                     Open checkout
                   </a>
                 ) : (

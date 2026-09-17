@@ -23,6 +23,27 @@ def subscription(db, customer, plan):
     return Subscription.start_trial(customer, plan)
 
 
+class TestPaymentResult:
+    def test_returns_only_status_without_auth(self, db, subscription):
+        payment = Payment.objects.create(
+            subscription=subscription,
+            amount_pyg=subscription.plan.price_pyg,
+            gateway="pagopar",
+            gateway_order_id="hash-public-1",
+        )
+        from rest_framework.test import APIClient
+
+        response = APIClient().get(f"/api/v1/payments/result/{payment.gateway_order_id}")
+
+        assert response.status_code == 200
+        assert response.data == {"status": PaymentStatus.PENDING}
+
+    def test_unknown_hash_is_404(self, db):
+        from rest_framework.test import APIClient
+
+        assert APIClient().get("/api/v1/payments/result/nope").status_code == 404
+
+
 class TestPaymentInitiation:
     def test_creates_pending_payment_and_returns_checkout_info(
         self, provisioned_app, subscription
