@@ -89,7 +89,13 @@ STORAGES = {
 }
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": ["payments_core.auth.ApiKeyAuthentication"],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "payments_core.auth.ApiKeyAuthentication",
+        # Staff dashboard sessions (see payments_core.auth_views); API-key
+        # requests are unaffected — SessionAuthentication is a no-op without
+        # a session cookie.
+        "rest_framework.authentication.SessionAuthentication",
+    ],
     "DEFAULT_PERMISSION_CLASSES": ["payments_core.auth.IsAuthenticatedApp"],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "payments_core.exceptions.exception_handler",

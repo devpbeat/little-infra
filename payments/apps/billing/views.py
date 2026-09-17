@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.subscriptions.models import Subscription
-from payments_core.auth import ScopedByAppMixin
+from payments_core.auth import IsAuthenticatedAppOnly, ScopedByAppMixin
 from payments_core.gateway import get_payment_gateway
 from payments_core.ports.payment_gateway import ChargeRequest
 
@@ -52,6 +52,8 @@ class PaymentInitiationView(APIView):
     sdd/payments-microservice/spike-pagopar finding (a)) is returned as-is;
     this service does not attempt to render or interpret it.
     """
+
+    permission_classes = [IsAuthenticatedAppOnly]
 
     def post(self, request):
         serializer = PaymentInitiationSerializer(data=request.data)

@@ -1,6 +1,9 @@
 import type { PropsWithChildren } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiKeyBar } from "./ApiKeyBar";
+import { httpClient } from "../../api/httpClient";
+import { getStoredApiKey } from "../../api/config";
 import "./AppLayout.css";
 
 const NAV_ITEMS = [
@@ -30,8 +33,40 @@ export function AppLayout({ children }: PropsWithChildren) {
           ))}
         </nav>
         <ApiKeyBar />
+        <SessionBar />
       </aside>
       <main className="app-main">{children}</main>
+    </div>
+  );
+}
+
+function SessionBar() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const hasApiKey = Boolean(getStoredApiKey());
+  const me = useQuery({
+    queryKey: ["auth-me"],
+    queryFn: () => httpClient.get<{ username: string; is_staff: boolean }>("/auth/me"),
+    enabled: !hasApiKey,
+    retry: false,
+    staleTime: 60_000,
+  });
+
+  if (hasApiKey || !me.data) return null;
+  return (
+    <div style={{ padding: "8px 12px", fontSize: 12, color: "var(--text-dim)" }}>
+      <span>{me.data.username}</span>
+      <button
+        type="button"
+        style={{ marginLeft: 8 }}
+        onClick={async () => {
+          await httpClient.post("/auth/logout");
+          queryClient.removeQueries({ queryKey: ["auth-me"] });
+          navigate("/login");
+        }}
+      >
+        Log out
+      </button>
     </div>
   );
 }
