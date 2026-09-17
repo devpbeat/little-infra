@@ -7,12 +7,15 @@ import { CustomerDetailPage } from "./pages/CustomerDetailPage";
 import { CustomerSignupPage } from "./pages/CustomerSignupPage";
 import { ContractTemplatesPage } from "./pages/ContractTemplatesPage";
 import { PaymentDetailPage } from "./pages/PaymentDetailPage";
+import { PaymentResultPage } from "./pages/PaymentResultPage";
 import "./styles/dashboard.css";
 
 function App() {
   return (
     <AppLayout>
       <Routes>
+        {/* Public: Pagopar redirects the payer here after checkout. */}
+        <Route path="/payments/result/:hash" element={<PaymentResultPage />} />
         <Route path="/" element={<OverviewPage />} />
         <Route path="/apps" element={<AppsKeysPage />} />
         <Route path="/customers" element={<CustomersListPage />} />
