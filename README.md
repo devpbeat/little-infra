@@ -142,42 +142,66 @@ For wildcard subdomains (e.g. `*.store.ignitesolutions.click`), use `certresolve
 
 ## CI/CD with Woodpecker
 
-GitHub Actions handles build + image push. Woodpecker handles deployment on the server.
+GitHub Actions handles build + test + image push (where applicable).
+Woodpecker deploys on the server, running as a container on the same VPS as
+every other stack (`ci/docker-compose.yml`), watching this same GitHub repo.
 
 **Flow:**
 ```
-push → GitHub Actions (build + push image to GHCR) → trigger Woodpecker pipeline → deploy.sh
+push to main → GitHub Actions (build + push image to GHCR, if the service has one)
+             → Woodpecker (native GitHub push event, same repo) → docker compose on the server
 ```
 
-**Triggering Woodpecker from GitHub Actions:**
-```yaml
-- name: Trigger deploy
-  run: |
-    curl -s -X POST \
-      -H "Authorization: Bearer ${{ secrets.WOODPECKER_TOKEN }}" \
-      https://ci.ignitesolutions.click/api/repos/<org>/<repo>/pipelines
-```
+Woodpecker is activated directly on this GitHub repo (Woodpecker UI →
+"Add repository"), so it receives the same `push` webhook GitHub already
+sends for Actions — there is no separate curl-based deploy trigger step in
+the workflows, and no `WOODPECKER_TOKEN`/`WOODPECKER_REPO`/
+`WOODPECKER_DEPLOY_URL` secrets to manage. Each service's pipeline lives in
+`.woodpecker/<service>.yml` (Woodpecker's multi-pipeline convention — one
+file per deployable stack, each with its own `when.path` filter) instead of
+a single root `.woodpecker.yml`. See:
 
-**Example `.woodpecker.yml` in each project repo:**
-```yaml
-steps:
-  - name: deploy
-    image: docker:cli
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    commands:
-      - sh ./deploy.sh
-    when:
-      event: manual
-```
+- `.woodpecker/payments.yml` — payments API + payments-ui + Postgres,
+  pulls images from GHCR (retries the pull since GitHub Actions' image push
+  can still be in flight when Woodpecker's push event fires — same commit,
+  two independent CI systems racing).
+- `.woodpecker/contracts.yml` — builds the image locally on the server
+  (no GHCR push exists for this service yet), no pull race.
+- `.woodpecker/traefik.yml` — public images only, lighter retry, but
+  restarts the shared edge proxy for every service on the box — review
+  changes carefully.
+- `.woodpecker/ci.yml` — redeploys Woodpecker itself; deliberately
+  `event: manual` only (self-referential: it would be restarting its own
+  agent mid-pipeline), triggered by hand from the Woodpecker UI.
 
-The `deploy.sh` in each project typically does:
-```bash
-#!/bin/bash
-set -e
-docker pull ghcr.io/your-org/your-app:main
-docker stack deploy -c docker-compose.yml your-stack --with-registry-auth
-```
+**Host checkout path:** every pipeline step bind-mounts the server's actual
+repo checkout at the *same* path inside the step container (assumed
+`/root/little-infra` — adjust in each `.woodpecker/*.yml` if your server
+uses a different path). This is required because `docker compose` runs
+against the host's dockerd over the mounted `/var/run/docker.sock`, so any
+relative paths it resolves (`env_file: .env`, build context, named
+volumes) must exist at that exact path on the *host*, not in Woodpecker's
+ephemeral git-clone workspace. It also means each service's real, gitignored
+`.env` (already present on the server per `deploy.sh`'s `ensure_env`) is
+used automatically — no secrets need to be duplicated into Woodpecker.
+
+**Activating a repo in the Woodpecker UI (one-time, per pipeline you want
+active):**
+1. Log into `https://ci.ignitesolutions.click` with the GitHub account set
+   as `WOODPECKER_ADMIN` (see `ci/env.example`).
+2. "Add repository" → select this repo.
+3. Repo settings → enable **Trusted** (or the "Trusted clone plugin" /
+   volumes permission, depending on Woodpecker version) — required because
+   these pipelines mount `/var/run/docker.sock` and a host path, which
+   Woodpecker blocks for untrusted repos by default.
+4. Repo settings → confirm the default branch is `main` and push events are
+   enabled (on by default once trusted).
+5. For `.woodpecker/ci.yml`, no toggle is needed beyond activation — it
+   only runs when manually triggered from the pipeline list.
+
+"Automatic deploy" now means: pushing to `main` with changes under a
+service's watched paths redeploys that service's stack on the VPS, with no
+manual curl/API call anywhere in the chain.
 
 ---
 

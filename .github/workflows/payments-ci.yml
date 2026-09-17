@@ -95,9 +95,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Trigger Woodpecker deploy
-        if: ${{ vars.WOODPECKER_DEPLOY_URL != '' }}
-        run: |
-          curl -sf -X POST \
-            -H "Authorization: Bearer ${{ secrets.WOODPECKER_DEPLOY_TOKEN }}" \
-            "${{ vars.WOODPECKER_DEPLOY_URL }}"
+      # No deploy-trigger step here: Woodpecker is activated on this
+      # GitHub repo and reacts natively to this same push event (see
+      # .woodpecker/payments.yml). A curl-triggered pipeline would be a
+      # redundant second webhook race for the same deploy.
