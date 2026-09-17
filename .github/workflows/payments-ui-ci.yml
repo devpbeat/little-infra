@@ -77,7 +77,16 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # No deploy-trigger step here: Woodpecker is activated on this
-      # GitHub repo and reacts natively to this same push event (see
-      # .woodpecker/payments.yml). A curl-triggered pipeline would be a
-      # redundant second webhook race for the same deploy.
+  # Fires AFTER the image is in GHCR — see payments-ci.yml for rationale.
+  trigger-deploy:
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Woodpecker deploy
+        run: |
+          curl -sf -X POST \
+            -H "Authorization: Bearer ${{ secrets.WOODPECKER_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"branch":"main","variables":{"DEPLOY_TARGET":"payments"}}' \
+            "https://ci.ignitesolutions.click/api/repos/${{ secrets.WOODPECKER_REPO_ID }}/pipelines"
