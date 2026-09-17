@@ -146,7 +146,7 @@ class PagoparWebhookView(APIView):
             # Same (gateway, event_id) already logged — replayed callback.
             # Per spec: "MUST NOT advance the subscription period again and
             # MUST return success without side effects".
-            return Response({"detail": "Already processed."}, status=status.HTTP_200_OK)
+            return Response(self._echo_body(raw_payload), status=status.HTTP_200_OK)
 
         if result.gateway_order_id:
             process_webhook_status(
@@ -158,4 +158,14 @@ class PagoparWebhookView(APIView):
         event.processed_at = timezone.now()
         event.save(update_fields=["processed_at"])
 
-        return Response({"detail": "ok"}, status=status.HTTP_200_OK)
+        return Response(self._echo_body(raw_payload), status=status.HTTP_200_OK)
+
+    @staticmethod
+    def _echo_body(raw_payload):
+        """Pagopar's validation circuit ("Paso 2") requires the response
+        body to be the `resultado` array echoed back verbatim. For payloads
+        without one (e.g. the fake gateway in tests), keep a plain ok."""
+        resultado = raw_payload.get("resultado") if isinstance(raw_payload, dict) else None
+        if isinstance(resultado, list):
+            return resultado
+        return {"detail": "ok"}

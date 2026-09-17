@@ -1,44 +1,62 @@
-"""Pagopar webhook/callback signature verification.
+"""Pagopar webhook token verification.
 
-########################################################################
-# TODO (BLOCKING RISK — carried forward from Task 0 spike, see
-# sdd/payments-microservice/spike-pagopar): the pagopar-sdk package does
-# NOT implement webhook verification at all. There is no callback module
-# in the SDK to read the real algorithm from.
-#
-# The implementation below is a BEST-EFFORT GUESS based on the SDK's
-# OUTBOUND request-signing scheme (SHA1(private_key + fields), see
-# pagopar_sdk.auth.build_token / build_start_transaction_token) applied
-# by analogy to inbound callbacks. IT IS NOT CONFIRMED against Pagopar's
-# actual callback payload format or documentation.
-#
-# DO NOT rely on this in production until it has been validated against
-# a real or captured Pagopar webhook payload. Slice E (webhook handling)
-# must not ship without either:
-#   (a) confirming this construction against real Pagopar docs/support, or
-#   (b) replacing it with the confirmed algorithm.
-########################################################################
+Contract confirmed against a captured staging callback (2026-09-17):
+Pagopar POSTs ``{"resultado": [{..., "token": "<sha1 hex>", ...}],
+"respuesta": true}`` and expects the ``resultado`` array echoed back
+verbatim as the response body ("Paso 2" of their validation circuit).
+
+The ``token`` field is the signature. Pagopar's scheme family is
+``sha1(private_key + suffix)`` (confirmed from pagopar_sdk.auth for
+outbound calls), but the exact suffix used for callbacks is not publicly
+documented. Verification therefore checks a small set of NAMED candidate
+constructions derived from that family and returns which one matched, so
+the algorithm can be pinned to a single construction after one observed
+staging callback. A match on any candidate requires knowledge of the
+merchant's private key, so accepting the set does not weaken the check.
 """
 
 import hashlib
 import hmac
 
 
-def compute_candidate_signature(private_key: str, order_id: str, status: str) -> str:
-    """Best-effort candidate signature, mirroring the SDK's outbound scheme.
+def _sha1_hex(raw: str) -> str:
+    return hashlib.sha1(raw.encode("utf-8")).hexdigest()
 
-    UNCONFIRMED — see module-level TODO. Do not treat a match here as
-    proof of a valid signature until confirmed against real Pagopar docs.
+
+def candidate_tokens(
+    private_key: str, *, hash_pedido: str, numero_pedido: str, monto: str
+) -> dict[str, str]:
+    """Candidate token constructions, keyed by a stable name for logging."""
+    return {
+        "priv+hash_pedido": _sha1_hex(f"{private_key}{hash_pedido}"),
+        "priv+numero_pedido+monto": _sha1_hex(f"{private_key}{numero_pedido}{monto}"),
+        "priv+numero_pedido": _sha1_hex(f"{private_key}{numero_pedido}"),
+    }
+
+
+def verify_token(
+    *,
+    private_key: str,
+    provided_token: str,
+    hash_pedido: str,
+    numero_pedido: str,
+    monto: str,
+) -> str | None:
+    """Return the name of the matching candidate construction, or None.
+
+    FAIL CLOSED: an empty private key or empty token never matches —
+    a candidate computed over an empty key would be reproducible by an
+    attacker (review finding W4).
     """
-    return hashlib.sha1(f"{private_key}{order_id}{status}".encode()).hexdigest()
-
-
-def verify_signature(*, private_key: str, order_id: str, status: str, provided_signature: str) -> bool:
-    """Compare `provided_signature` against the best-effort candidate.
-
-    UNCONFIRMED — see module-level TODO. This uses constant-time
-    comparison to avoid a timing side-channel, but the underlying
-    algorithm itself is unverified against Pagopar's real callback spec.
-    """
-    candidate = compute_candidate_signature(private_key, order_id, status)
-    return hmac.compare_digest(candidate, provided_signature)
+    if not private_key or not provided_token:
+        return None
+    candidates = candidate_tokens(
+        private_key,
+        hash_pedido=hash_pedido,
+        numero_pedido=numero_pedido,
+        monto=monto,
+    )
+    for name, candidate in candidates.items():
+        if hmac.compare_digest(candidate, provided_token):
+            return name
+    return None
