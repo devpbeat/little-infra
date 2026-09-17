@@ -12,6 +12,7 @@ functionality.
 
 import datetime
 import json
+import logging
 import os
 
 from django.utils import timezone
@@ -25,7 +26,9 @@ from payments_core.ports.payment_gateway import (
 )
 
 from .client import build_pagopar_client
-from .signature import verify_signature
+from .signature import verify_token
+
+logger = logging.getLogger(__name__)
 
 # Checkout payment window: how long the buyer has to complete a QR/checkout
 # payment before Pagopar expires it. Not confirmed against product
@@ -172,38 +175,57 @@ class PagoparAdapter(PaymentGateway):
         return _map_status(raw_status)
 
     def verify_webhook(self, headers: dict, body: bytes) -> WebhookVerificationResult:
-        """Verify an inbound Pagopar webhook.
+        """Verify an inbound Pagopar webhook (real contract, captured 2026-09-17).
 
-        See `signature.py` module docstring: the underlying algorithm is
-        UNCONFIRMED against real Pagopar callback docs. This method wires
-        the plumbing (payload parsing, DTO shape) so Slice E can focus on
-        confirming the signature scheme rather than the wiring.
+        Pagopar POSTs ``{"resultado": [{...}], "respuesta": true}`` where the
+        first ``resultado`` item carries the order (``hash_pedido``,
+        ``numero_pedido``, ``monto``), the state booleans (``pagado``,
+        ``cancelado``) and the signature (``token`` — see signature.py).
 
-        FAIL CLOSED (review finding W4): if `PAGOPAR_PRIVATE_KEY` is unset
-        or empty, verification MUST reject the webhook rather than compare
-        against a candidate signature computed with an empty key (which an
-        attacker could trivially reproduce). An unconfigured deployment
-        must never silently accept forged webhooks.
+        FAIL CLOSED (review finding W4): an unset/empty
+        `PAGOPAR_PRIVATE_KEY` always rejects.
         """
-        payload = json.loads(body)
-        order_id = payload.get("id_pedido_comercio")
-        raw_status = payload.get("estado")
-        provided_signature = headers.get("X-Pagopar-Signature", "")
+        try:
+            payload = json.loads(body) if body else {}
+        except ValueError:
+            payload = {}
+        items = payload.get("resultado")
+        item = items[0] if isinstance(items, list) and items else {}
+        if not isinstance(item, dict):
+            item = {}
+
+        hash_pedido = str(item.get("hash_pedido") or "")
+        numero_pedido = str(item.get("numero_pedido") or "")
+        monto = str(item.get("monto") or "")
+        provided_token = str(item.get("token") or "")
         private_key = os.environ.get("PAGOPAR_PRIVATE_KEY", "")
 
-        is_valid = (
-            bool(private_key)
-            and bool(order_id and raw_status and provided_signature)
-            and verify_signature(
+        matched = None
+        if hash_pedido:
+            matched = verify_token(
                 private_key=private_key,
-                order_id=str(order_id),
-                status=str(raw_status),
-                provided_signature=provided_signature,
+                provided_token=provided_token,
+                hash_pedido=hash_pedido,
+                numero_pedido=numero_pedido,
+                monto=monto,
             )
-        )
+        if matched:
+            # Never log key material or the token; the candidate NAME lets
+            # us pin the algorithm to one construction after observation.
+            logger.info("pagopar webhook token matched candidate %s", matched)
+
+        if item.get("pagado") is True:
+            status = ChargeStatus.CONFIRMED
+        elif item.get("cancelado") is True:
+            status = ChargeStatus.FAILED
+        else:
+            status = ChargeStatus.PENDING
+
         return WebhookVerificationResult(
-            is_valid=is_valid,
-            event_id=payload.get("id_pedido"),
-            gateway_order_id=order_id,
-            status=_map_status(raw_status) if is_valid else raw_status,
+            is_valid=matched is not None,
+            # A pending and a later paid callback for the same order are
+            # distinct events; replays of the same state are deduplicated.
+            event_id=f"{hash_pedido}:{status}" if hash_pedido else None,
+            gateway_order_id=hash_pedido or None,
+            status=status,
         )

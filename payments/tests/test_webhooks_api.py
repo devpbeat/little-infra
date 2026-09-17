@@ -184,57 +184,105 @@ class TestWebhookIdempotency:
         assert subscription.current_period_end == period_end_after_first
 
 
-class TestWebhookSignatureRejection:
-    def test_bad_signature_is_rejected(self, api_client, settings, monkeypatch, pending_payment):
+def _pagopar_body(
+    hash_pedido: str,
+    *,
+    pagado: bool = False,
+    cancelado: bool = False,
+    monto: str = "10000.00",
+    numero_pedido: str = "22641115",
+    token: str = "",
+) -> bytes:
+    """Real Pagopar callback shape, captured from staging on 2026-09-17."""
+    return json.dumps(
+        {
+            "resultado": [
+                {
+                    "pagado": pagado,
+                    "cancelado": cancelado,
+                    "monto": monto,
+                    "numero_pedido": numero_pedido,
+                    "hash_pedido": hash_pedido,
+                    "token": token,
+                    "forma_pago": "Tarjetas de crédito",
+                    "numero_comprobante_interno": "1234567890",
+                }
+            ],
+            "respuesta": True,
+        }
+    ).encode()
+
+
+class TestWebhookPagoparContract:
+    def _use_real_adapter(self, settings, monkeypatch, private_key="test-private"):
         settings.PAYMENT_GATEWAY = "adapters.pagopar.adapter.PagoparAdapter"
         monkeypatch.setenv("PAGOPAR_PUBLIC_KEY", "test-public")
-        monkeypatch.setenv("PAGOPAR_PRIVATE_KEY", "test-private")
+        monkeypatch.setenv("PAGOPAR_PRIVATE_KEY", private_key)
         monkeypatch.setenv("PAGOPAR_BASE_URL", "https://api.pagopar.test")
 
-        body = json.dumps(
-            {"id_pedido_comercio": pending_payment.gateway_order_id, "estado": "pagado", "id_pedido": "evt-bad"}
-        ).encode()
+    def test_valid_token_confirms_payment_and_echoes_resultado(
+        self, api_client, settings, monkeypatch, pending_payment
+    ):
+        from adapters.pagopar.signature import candidate_tokens
+
+        self._use_real_adapter(settings, monkeypatch)
+        token = candidate_tokens(
+            "test-private",
+            hash_pedido=pending_payment.gateway_order_id,
+            numero_pedido="22641115",
+            monto="10000.00",
+        )["priv+hash_pedido"]
 
         response = api_client.post(
             WEBHOOK_URL,
-            data=body,
+            data=_pagopar_body(pending_payment.gateway_order_id, pagado=True, token=token),
             content_type="application/json",
-            HTTP_X_PAGOPAR_SIGNATURE="not-the-real-signature",
+        )
+
+        assert response.status_code == 200
+        # Pagopar's Paso 2 requires the resultado array echoed back.
+        assert isinstance(response.data, list)
+        assert response.data[0]["hash_pedido"] == pending_payment.gateway_order_id
+        pending_payment.refresh_from_db()
+        assert pending_payment.status == PaymentStatus.CONFIRMED
+
+    def test_bad_token_is_rejected(self, api_client, settings, monkeypatch, pending_payment):
+        self._use_real_adapter(settings, monkeypatch)
+
+        response = api_client.post(
+            WEBHOOK_URL,
+            data=_pagopar_body(
+                pending_payment.gateway_order_id, pagado=True, token="not-the-real-token"
+            ),
+            content_type="application/json",
         )
 
         assert response.status_code == 401
         pending_payment.refresh_from_db()
         assert pending_payment.status == PaymentStatus.PENDING
         # Logged for forensics even though rejected (design §5, layer 4).
-        assert WebhookEvent.objects.filter(payload__id_pedido_comercio=pending_payment.gateway_order_id).exists()
+        assert WebhookEvent.objects.filter(event_id__startswith="invalid-").exists()
 
-    def test_empty_private_key_fails_closed_even_with_valid_looking_signature(
+    def test_empty_private_key_fails_closed_even_with_valid_looking_token(
         self, api_client, settings, monkeypatch, pending_payment
     ):
         """Review finding W4: an unconfigured PAGOPAR_PRIVATE_KEY must never
-        let a webhook through, even if the attacker computes a signature
+        let a webhook through, even if the attacker computes a token
         assuming an empty key."""
-        from adapters.pagopar.signature import compute_candidate_signature
+        from adapters.pagopar.signature import candidate_tokens
 
-        settings.PAYMENT_GATEWAY = "adapters.pagopar.adapter.PagoparAdapter"
-        monkeypatch.setenv("PAGOPAR_PUBLIC_KEY", "test-public")
-        monkeypatch.setenv("PAGOPAR_PRIVATE_KEY", "")
-        monkeypatch.setenv("PAGOPAR_BASE_URL", "https://api.pagopar.test")
-
-        forged_signature = compute_candidate_signature("", pending_payment.gateway_order_id, "pagado")
-        body = json.dumps(
-            {
-                "id_pedido_comercio": pending_payment.gateway_order_id,
-                "estado": "pagado",
-                "id_pedido": "evt-empty-key",
-            }
-        ).encode()
+        self._use_real_adapter(settings, monkeypatch, private_key="")
+        forged = candidate_tokens(
+            "",
+            hash_pedido=pending_payment.gateway_order_id,
+            numero_pedido="22641115",
+            monto="10000.00",
+        )["priv+hash_pedido"]
 
         response = api_client.post(
             WEBHOOK_URL,
-            data=body,
+            data=_pagopar_body(pending_payment.gateway_order_id, pagado=True, token=forged),
             content_type="application/json",
-            HTTP_X_PAGOPAR_SIGNATURE=forged_signature,
         )
 
         assert response.status_code == 401

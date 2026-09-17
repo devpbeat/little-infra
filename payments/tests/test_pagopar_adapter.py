@@ -12,7 +12,7 @@ import respx
 from httpx import Response
 
 from adapters.pagopar.adapter import PagoparAdapter
-from adapters.pagopar.signature import compute_candidate_signature, verify_signature
+from adapters.pagopar.signature import candidate_tokens, verify_token
 from payments_core.ports.payment_gateway import ChargeRequest, ChargeStatus
 
 
@@ -109,49 +109,127 @@ class TestGetChargeStatus:
         assert adapter.get_charge_status("hash-1") == ChargeStatus.PENDING
 
 
+def _callback_body(
+    hash_pedido: str,
+    *,
+    pagado: bool = False,
+    cancelado: bool = False,
+    token: str = "",
+    monto: str = "10000.00",
+    numero_pedido: str = "22641115",
+) -> bytes:
+    """Real Pagopar callback shape, captured from staging on 2026-09-17."""
+    return json.dumps(
+        {
+            "resultado": [
+                {
+                    "pagado": pagado,
+                    "cancelado": cancelado,
+                    "monto": monto,
+                    "numero_pedido": numero_pedido,
+                    "hash_pedido": hash_pedido,
+                    "token": token,
+                }
+            ],
+            "respuesta": True,
+        }
+    ).encode()
+
+
 class TestVerifyWebhook:
-    def test_valid_signature_is_accepted(self, pagopar_env):
+    def test_valid_token_is_accepted(self, pagopar_env):
         private_key = os.environ["PAGOPAR_PRIVATE_KEY"]
-        signature = compute_candidate_signature(private_key, "order-1", "pagado")
-        body = json.dumps(
-            {"id_pedido_comercio": "order-1", "estado": "pagado", "id_pedido": "evt-1"}
-        ).encode()
+        token = candidate_tokens(
+            private_key, hash_pedido="hash-1", numero_pedido="22641115", monto="10000.00"
+        )["priv+hash_pedido"]
 
         adapter = PagoparAdapter()
-        result = adapter.verify_webhook({"X-Pagopar-Signature": signature}, body)
+        result = adapter.verify_webhook({}, _callback_body("hash-1", pagado=True, token=token))
 
         assert result.is_valid is True
-        assert result.gateway_order_id == "order-1"
-        assert result.event_id == "evt-1"
+        assert result.gateway_order_id == "hash-1"
+        assert result.status == ChargeStatus.CONFIRMED
+        assert result.event_id == f"hash-1:{ChargeStatus.CONFIRMED}"
 
-    def test_invalid_signature_is_rejected(self, pagopar_env):
-        body = json.dumps(
-            {"id_pedido_comercio": "order-1", "estado": "pagado", "id_pedido": "evt-1"}
-        ).encode()
+    def test_each_candidate_construction_is_accepted(self, pagopar_env):
+        private_key = os.environ["PAGOPAR_PRIVATE_KEY"]
+        for name, token in candidate_tokens(
+            private_key, hash_pedido="hash-1", numero_pedido="22641115", monto="10000.00"
+        ).items():
+            adapter = PagoparAdapter()
+            result = adapter.verify_webhook(
+                {}, _callback_body("hash-1", pagado=True, token=token)
+            )
+            assert result.is_valid is True, f"candidate {name} should verify"
 
+    def test_invalid_token_is_rejected(self, pagopar_env):
         adapter = PagoparAdapter()
-        result = adapter.verify_webhook({"X-Pagopar-Signature": "wrong"}, body)
+        result = adapter.verify_webhook(
+            {}, _callback_body("hash-1", pagado=True, token="wrong")
+        )
 
         assert result.is_valid is False
 
-    def test_missing_signature_header_is_rejected(self, pagopar_env):
-        body = json.dumps({"id_pedido_comercio": "order-1", "estado": "pagado"}).encode()
-
+    def test_missing_token_is_rejected(self, pagopar_env):
         adapter = PagoparAdapter()
-        result = adapter.verify_webhook({}, body)
+        result = adapter.verify_webhook({}, _callback_body("hash-1", pagado=True))
 
         assert result.is_valid is False
+
+    def test_cancelado_maps_to_failed(self, pagopar_env):
+        private_key = os.environ["PAGOPAR_PRIVATE_KEY"]
+        token = candidate_tokens(
+            private_key, hash_pedido="hash-1", numero_pedido="22641115", monto="10000.00"
+        )["priv+hash_pedido"]
+
+        adapter = PagoparAdapter()
+        result = adapter.verify_webhook(
+            {}, _callback_body("hash-1", cancelado=True, token=token)
+        )
+
+        assert result.is_valid is True
+        assert result.status == ChargeStatus.FAILED
+
+    def test_unpaid_uncancelled_maps_to_pending(self, pagopar_env):
+        private_key = os.environ["PAGOPAR_PRIVATE_KEY"]
+        token = candidate_tokens(
+            private_key, hash_pedido="hash-1", numero_pedido="22641115", monto="10000.00"
+        )["priv+hash_pedido"]
+
+        adapter = PagoparAdapter()
+        result = adapter.verify_webhook({}, _callback_body("hash-1", token=token))
+
+        assert result.is_valid is True
+        assert result.status == ChargeStatus.PENDING
 
 
 class TestSignatureHelpers:
-    def test_verify_signature_matches_candidate(self):
-        candidate = compute_candidate_signature("secret", "order-1", "pagado")
-        assert verify_signature(
-            private_key="secret", order_id="order-1", status="pagado", provided_signature=candidate
+    def test_verify_token_returns_matching_candidate_name(self):
+        token = candidate_tokens(
+            "secret", hash_pedido="h1", numero_pedido="n1", monto="5000.00"
+        )["priv+numero_pedido+monto"]
+        assert (
+            verify_token(
+                private_key="secret",
+                provided_token=token,
+                hash_pedido="h1",
+                numero_pedido="n1",
+                monto="5000.00",
+            )
+            == "priv+numero_pedido+monto"
         )
 
-    def test_verify_signature_rejects_tampered_status(self):
-        candidate = compute_candidate_signature("secret", "order-1", "pagado")
-        assert not verify_signature(
-            private_key="secret", order_id="order-1", status="rechazado", provided_signature=candidate
+    def test_verify_token_rejects_empty_key(self):
+        token = candidate_tokens("", hash_pedido="h1", numero_pedido="n1", monto="5000.00")[
+            "priv+hash_pedido"
+        ]
+        assert (
+            verify_token(
+                private_key="",
+                provided_token=token,
+                hash_pedido="h1",
+                numero_pedido="n1",
+                monto="5000.00",
+            )
+            is None
         )
