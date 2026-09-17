@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { Badge, Button, Card, Table } from "../../components/ui";
 import { formatDate } from "../../lib/format";
 import { paymentsApi } from "../../api/client";
@@ -6,11 +7,12 @@ import type { Subscription } from "../../api/types";
 
 export function SubscriptionsTable({ subscriptions }: { subscriptions: Subscription[] }) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const initiate = useMutation({
     mutationFn: (subscriptionId: number) => paymentsApi.payments.initiate(subscriptionId),
     onSuccess: (payment) => {
       queryClient.invalidateQueries({ queryKey: ["payments"] });
-      window.location.assign(`/payments/${payment.id}`);
+      navigate(`/payments/${payment.id}`);
     },
   });
 
@@ -48,6 +50,13 @@ export function SubscriptionsTable({ subscriptions }: { subscriptions: Subscript
               </td>
             </tr>
           ))}
+          {initiate.isError && (
+            <tr>
+              <td colSpan={6} className="state-message">
+                Payment initiation failed. Check the API key and try again.
+              </td>
+            </tr>
+          )}
           {subscriptions.length === 0 && (
             <tr>
               <td colSpan={6} className="state-message">

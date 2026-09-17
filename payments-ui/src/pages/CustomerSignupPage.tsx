@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "../components/ui/AppLayout";
 import { Button, Card } from "../components/ui";
@@ -13,13 +13,17 @@ import { ApiError } from "../api/httpClient";
  */
 export function CustomerSignupPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [externalRef, setExternalRef] = useState("");
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
 
   const signup = useMutation({
     mutationFn: () => paymentsApi.customers.signup({ external_ref: externalRef, email, display_name: displayName }),
-    onSuccess: (customer) => navigate(`/customers/${encodeURIComponent(customer.external_ref)}`),
+    onSuccess: (customer) => {
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      navigate(`/customers/${encodeURIComponent(customer.external_ref)}`);
+    },
   });
 
   return (
