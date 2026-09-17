@@ -1,0 +1,85 @@
+name: payments-ui-ci
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "payments-ui/**"
+      - ".github/workflows/payments-ui-ci.yml"
+  pull_request:
+    paths:
+      - "payments-ui/**"
+      - ".github/workflows/payments-ui-ci.yml"
+
+concurrency:
+  group: payments-ui-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: payments-ui
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: payments-ui/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint (oxlint)
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+  build-and-push:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    defaults:
+      run:
+        working-directory: payments-ui
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: payments-ui
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/payments-ui:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/payments-ui:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Trigger Woodpecker deploy
+        if: ${{ vars.WOODPECKER_DEPLOY_URL != '' }}
+        run: |
+          curl -sf -X POST \
+            -H "Authorization: Bearer ${{ secrets.WOODPECKER_DEPLOY_TOKEN }}" \
+            "${{ vars.WOODPECKER_DEPLOY_URL }}"
