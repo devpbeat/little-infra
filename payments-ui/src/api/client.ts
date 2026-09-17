@@ -108,5 +108,10 @@ export const paymentsApi = {
             confirmed_at: null,
           })
         : httpClient.post("/payments", { subscription: subscriptionId }),
+    /** `POST /payments/{id}/refresh/` — poll the gateway for the order's current status. */
+    refresh: (id: number): Promise<Payment> =>
+      isUsingMockApi()
+        ? paymentsApi.payments.get(id)
+        : httpClient.post(`/payments/${id}/refresh/`),
   },
 };

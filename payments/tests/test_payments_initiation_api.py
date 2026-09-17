@@ -43,6 +43,45 @@ class TestPaymentResult:
         assert APIClient().get("/api/v1/payments/result/nope").status_code == 404
 
 
+class TestPaymentRefresh:
+    def test_refresh_applies_gateway_status(
+        self, provisioned_app, subscription, monkeypatch
+    ):
+        from adapters.fakes.fake_gateway import FakePaymentGateway
+        from apps.billing import views
+        from payments_core.ports.payment_gateway import ChargeStatus
+
+        _app, raw_key = provisioned_app
+        payment = Payment.objects.create(
+            subscription=subscription,
+            amount_pyg=subscription.plan.price_pyg,
+            gateway="pagopar",
+            gateway_order_id="hash-refresh-1",
+        )
+        fake = FakePaymentGateway()
+        fake.set_status("hash-refresh-1", ChargeStatus.CONFIRMED)
+        monkeypatch.setattr(views, "get_payment_gateway", lambda: fake)
+
+        client = authed_client(raw_key)
+        response = client.post(f"/api/v1/payments/{payment.pk}/refresh/")
+
+        assert response.status_code == 200
+        assert response.data["status"] == PaymentStatus.CONFIRMED
+        payment.refresh_from_db()
+        assert payment.status == PaymentStatus.CONFIRMED
+
+    def test_refresh_without_gateway_order_is_409(self, provisioned_app, subscription):
+        _app, raw_key = provisioned_app
+        payment = Payment.objects.create(
+            subscription=subscription,
+            amount_pyg=subscription.plan.price_pyg,
+            gateway="pagopar",
+        )
+
+        client = authed_client(raw_key)
+        assert client.post(f"/api/v1/payments/{payment.pk}/refresh/").status_code == 409
+
+
 class TestPaymentInitiation:
     def test_creates_pending_payment_and_returns_checkout_info(
         self, provisioned_app, subscription
