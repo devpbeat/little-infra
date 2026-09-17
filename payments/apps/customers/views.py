@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 
 from apps.contracts.models import Contract, ContractStatus
 from apps.subscriptions.models import Subscription
-from payments_core.auth import ScopedByAppMixin
+from payments_core.auth import IsAuthenticatedAppOnly, ScopedByAppMixin
 
 from .models import Customer
 from .serializers import CustomerSerializer, EntitlementSerializer, SignupSerializer
@@ -20,6 +20,8 @@ class SignupView(APIView):
     credentials returns the already-provisioned Customer/Contract/Subscription
     instead of creating duplicates (design §5).
     """
+
+    permission_classes = [IsAuthenticatedAppOnly]
 
     def post(self, request):
         serializer = SignupSerializer(data=request.data)

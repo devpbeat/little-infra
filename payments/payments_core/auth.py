@@ -77,15 +77,38 @@ class ApiKeyAuthentication(authentication.BaseAuthentication):
         api_key.save(update_fields=["last_used_at"])
 
 
+def _is_staff_session(request) -> bool:
+    """True when the request authenticated as a staff user via session."""
+    user = getattr(request, "user", None)
+    return bool(user is not None and user.is_authenticated and user.is_staff)
+
+
 class IsAuthenticatedApp(permissions.BasePermission):
     """Permission companion to `ApiKeyAuthentication`.
 
     DRF's stock `IsAuthenticated` checks `request.user.is_authenticated`, but
-    this service has no end-user model — `ApiKeyAuthentication` always returns
+    API-key requests carry no end user — `ApiKeyAuthentication` always returns
     `AnonymousUser()`, whose `is_authenticated` is unconditionally `False`.
-    Using the stock permission would 403 every successfully authenticated
-    request. The real "authenticated" signal here is `request.app` being set.
+    The "authenticated" signal for machines is `request.app` being set.
+
+    A STAFF session (the operator dashboard login) also passes: admins can
+    read across apps. App-context-only actions (signup, payment initiation)
+    must additionally check `request.app` themselves.
     """
+
+    def has_permission(self, request, view) -> bool:
+        return getattr(request, "app", None) is not None or _is_staff_session(request)
+
+
+class IsAuthenticatedAppOnly(permissions.BasePermission):
+    """Only an API-key-authenticated app may act — staff sessions get 403.
+
+    Used by write actions that create billing state for a specific app
+    (signup, payment initiation): an admin has no app context, so allowing
+    it would create orphaned or misattributed records.
+    """
+
+    message = "This action requires an app API key; admin sessions cannot perform it."
 
     def has_permission(self, request, view) -> bool:
         return getattr(request, "app", None) is not None
@@ -111,5 +134,9 @@ class ScopedByAppMixin:
         queryset = super().get_queryset()
         app = getattr(self.request, "app", None)
         if app is None:
+            # Staff sessions (operator dashboard) read across all apps;
+            # everything else stays default-deny.
+            if _is_staff_session(self.request):
+                return queryset
             return queryset.none()
         return queryset.filter(**{self.app_scope_field: app})
