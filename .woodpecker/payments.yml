@@ -1,21 +1,17 @@
 # Deploys the payments stack (API + UI + dedicated Postgres) on the VPS.
 #
-# Triggered natively by Woodpecker on push to main, gated to the paths that
-# actually change this stack. GitHub Actions (payments-ci.yml,
-# payments-ui-ci.yml) build+push the images to GHCR on the same push, so
-# this pipeline races that build — see the retry loop below.
+# Triggered via the Woodpecker API by GitHub Actions AFTER the GHCR image
+# push succeeds (see the trigger-deploy jobs in payments-ci.yml and
+# payments-ui-ci.yml) — this removes the deploy/build race where a push
+# event deployed the PREVIOUS `latest` image while the new one was still
+# building. Manual runs from the Woodpecker UI work too: set the pipeline
+# variable DEPLOY_TARGET=payments when triggering.
 #
-# NOTE: adjust HOST_REPO_PATH if the server checkout of this repo does not
-# live at /home/ubuntu/little-infra (see README.md "CI/CD with Woodpecker").
+# NOTE: adjust the bind-mount path below if the server checkout of this
+# repo does not live at /home/ubuntu/little-infra (see README.md).
 when:
-  - event: push
-    branch: main
-    path:
-      include:
-        - "payments/**"
-        - "payments-ui/**"
-        - ".github/workflows/payments-ci.yml"
-        - ".github/workflows/payments-ui-ci.yml"
+  - event: manual
+    evaluate: 'DEPLOY_TARGET == "payments"'
 
 steps:
   - name: deploy

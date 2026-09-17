@@ -7,8 +7,12 @@
 # auto-apply with no human in the loop and no easy way for Woodpecker to
 # report its own failure. Left as `event: manual`, triggered from the
 # Woodpecker UI ("Trigger pipeline") after reviewing the diff to ci/.
+# The evaluate gate keeps API-triggered deploys of OTHER stacks (which
+# also arrive as `manual` events) from redeploying the CI engine itself:
+# this pipeline only runs when explicitly asked for with DEPLOY_TARGET=ci.
 when:
   - event: manual
+    evaluate: 'DEPLOY_TARGET == "ci"'
 
 steps:
   - name: deploy
