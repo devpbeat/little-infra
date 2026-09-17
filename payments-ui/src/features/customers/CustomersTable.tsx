@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Badge, Card, Table } from "../../components/ui";
-import { formatCents, formatDealType } from "../../lib/format";
+import { formatDate } from "../../lib/format";
 import type { Customer } from "../../api/types";
 
 export function CustomersTable({ customers }: { customers: Customer[] }) {
@@ -10,28 +10,33 @@ export function CustomersTable({ customers }: { customers: Customer[] }) {
         <thead>
           <tr>
             <th>Customer</th>
-            <th>Deal type</th>
+            <th>Email</th>
             <th>Contract status</th>
             <th>Subscription</th>
-            <th>Lifetime paid</th>
+            <th>Customer since</th>
           </tr>
         </thead>
         <tbody>
           {customers.map((customer) => (
-            <tr key={customer.id}>
+            <tr key={customer.external_ref}>
               <td>
-                <Link to={`/customers/${customer.id}`} className="table-link">
-                  {customer.name}
+                <Link to={`/customers/${encodeURIComponent(customer.external_ref)}`} className="table-link">
+                  {customer.display_name || customer.external_ref}
                 </Link>
               </td>
-              <td>{formatDealType(customer.dealType)}</td>
-              <td>
-                <Badge tone={customer.contractStatus} />
-              </td>
-              <td>{customer.subscriptionStatus ? <Badge tone={customer.subscriptionStatus} /> : "—"}</td>
-              <td>{formatCents(customer.lifetimePaidCents)}</td>
+              <td>{customer.email || "—"}</td>
+              <td>{customer.contract ? <Badge tone={customer.contract.status} /> : "—"}</td>
+              <td>{customer.subscription ? <Badge tone={customer.subscription.status} /> : "—"}</td>
+              <td>{formatDate(customer.created_at)}</td>
             </tr>
           ))}
+          {customers.length === 0 && (
+            <tr>
+              <td colSpan={5} className="state-message">
+                No customers yet.
+              </td>
+            </tr>
+          )}
         </tbody>
       </Table>
     </Card>

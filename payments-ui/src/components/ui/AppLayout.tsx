@@ -1,5 +1,6 @@
 import type { PropsWithChildren } from "react";
 import { NavLink } from "react-router-dom";
+import { ApiKeyBar } from "./ApiKeyBar";
 import "./AppLayout.css";
 
 const NAV_ITEMS = [
@@ -28,6 +29,7 @@ export function AppLayout({ children }: PropsWithChildren) {
             </NavLink>
           ))}
         </nav>
+        <ApiKeyBar />
       </aside>
       <main className="app-main">{children}</main>
     </div>

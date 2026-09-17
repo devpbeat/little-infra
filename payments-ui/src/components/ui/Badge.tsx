@@ -1,6 +1,23 @@
 import "./Badge.css";
 
-export type BadgeTone = "active" | "trial" | "past_due" | "canceled" | "pending" | "succeeded" | "failed" | "refunded" | "draft" | "sent" | "signed" | "void" | "disabled" | "neutral";
+export type BadgeTone =
+  | "active"
+  | "trialing"
+  | "past_due"
+  | "canceled"
+  | "pending"
+  | "confirmed"
+  | "failed"
+  | "expired"
+  | "draft"
+  | "generated"
+  | "sent"
+  | "signed"
+  | "declined"
+  | "voided"
+  | "terminated"
+  | "disabled"
+  | "neutral";
 
 const LABELS: Partial<Record<BadgeTone, string>> = {
   past_due: "past due",

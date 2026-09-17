@@ -1,7 +1,13 @@
 import { Card } from "../../components/ui";
 import { formatDate } from "../../lib/format";
-import type { TimelineEvent } from "../../api/types";
 import "./CustomerTimeline.css";
+
+export interface TimelineEvent {
+  id: string;
+  date: string;
+  title: string;
+  kind: "contract" | "subscription" | "payment";
+}
 
 export function CustomerTimeline({ events }: { events: TimelineEvent[] }) {
   return (
@@ -13,6 +19,7 @@ export function CustomerTimeline({ events }: { events: TimelineEvent[] }) {
             <div className="timeline-title">{event.title}</div>
           </li>
         ))}
+        {events.length === 0 && <li className="state-message">No timeline events yet.</li>}
       </ul>
     </Card>
   );

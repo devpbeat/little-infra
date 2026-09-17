@@ -2,6 +2,13 @@ export function formatCents(cents: number, currency = "USD"): string {
   return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(cents / 100);
 }
 
+/** PYG (Paraguayan guaraní) has no minor unit — `amount_pyg` is already a whole-currency integer. */
+export function formatPyg(amountPyg: number): string {
+  return new Intl.NumberFormat("es-PY", { style: "currency", currency: "PYG", maximumFractionDigits: 0 }).format(
+    amountPyg,
+  );
+}
+
 export function formatDate(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;

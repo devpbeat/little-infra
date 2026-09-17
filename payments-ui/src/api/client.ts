@@ -1,21 +1,18 @@
-import { USE_MOCK_API } from "./config";
+import { isUsingMockApi } from "./config";
 import { httpClient } from "./httpClient";
 import {
-  mockApps,
-  mockContractTemplates,
-  mockCustomerDetails,
   mockCustomers,
-  mockOverview,
   mockPayments,
   mockSubscriptions,
 } from "../fixtures/data";
 import type {
-  ConsumingApp,
-  ContractTemplate,
+  Contract,
+  ContractAppReportedStatus,
   Customer,
-  CustomerDetail,
-  OverviewSummary,
+  Entitlement,
+  PaginatedResponse,
   Payment,
+  SignupRequest,
   Subscription,
 } from "./types";
 
@@ -24,73 +21,92 @@ function mockDelay<T>(value: T, ms = 150): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(value), ms));
 }
 
+function mockPage<T>(items: T[]): PaginatedResponse<T> {
+  return { count: items.length, next: null, previous: null, results: items };
+}
+
 /**
- * Typed client for the payments admin API.
+ * Typed client for the real payments API, reconciled against the OpenAPI
+ * schema exported from `payments/` (main tip) via `manage.py spectacular`.
  *
- * When `VITE_USE_MOCK_API` is not explicitly "false", every method resolves
- * against local fixture data instead of hitting a live backend — this lets
- * the UI run fully standalone while `payments/` is still being built.
- *
- * Endpoint paths are inferred (not yet confirmed against a published
- * OpenAPI schema) and namespaced under `/api/v1` to match the health check
- * route already present in `payments/config/urls.py`.
+ * Endpoints with no REST surface by design (consuming-app / API-key CRUD,
+ * contract-template CRUD) are intentionally absent here — see
+ * `AppsKeysPage.tsx` and `ContractTemplatesPage.tsx`, which link to the
+ * Django admin instead of calling a fake endpoint.
  */
 export const paymentsApi = {
-  overview: {
-    get: (): Promise<OverviewSummary> =>
-      USE_MOCK_API
-        ? mockDelay(mockOverview)
-        : httpClient.get<OverviewSummary>("/overview"),
+  customers: {
+    list: (): Promise<PaginatedResponse<Customer>> =>
+      isUsingMockApi() ? mockDelay(mockPage(mockCustomers)) : httpClient.get("/customers/"),
+    get: (externalRef: string): Promise<Customer> =>
+      isUsingMockApi()
+        ? mockDelay(mockCustomers.find((c) => c.external_ref === externalRef)!)
+        : httpClient.get(`/customers/${encodeURIComponent(externalRef)}/`),
+    entitlement: (externalRef: string): Promise<Entitlement> =>
+      isUsingMockApi()
+        ? mockDelay({ entitled: true, status: "active", trial_end: null, current_period_end: null })
+        : httpClient.get(`/customers/${encodeURIComponent(externalRef)}/entitlement/`),
+    /** `POST /customers/signup` — idempotent by (app, external_ref); no trailing slash. */
+    signup: (body: SignupRequest): Promise<Customer> =>
+      isUsingMockApi()
+        ? mockDelay({
+            external_ref: body.external_ref,
+            email: body.email ?? "",
+            display_name: body.display_name ?? "",
+            created_at: new Date().toISOString(),
+            contract: null,
+            subscription: null,
+          })
+        : httpClient.post("/customers/signup", body),
+  },
+
+  contracts: {
+    list: (): Promise<PaginatedResponse<Contract>> =>
+      isUsingMockApi() ? mockDelay(mockPage([])) : httpClient.get("/contracts/"),
+    get: (id: number): Promise<Contract> =>
+      isUsingMockApi() ? mockDelay({} as Contract) : httpClient.get(`/contracts/${id}/`),
+    /** `POST /contracts/{id}/transition` — only `sent` and `signed` are app-reportable. */
+    transition: (id: number, status: ContractAppReportedStatus): Promise<Contract> =>
+      isUsingMockApi()
+        ? mockDelay({ id, customer: 0, template: 0, status, external_envelope_id: "", created_at: "", updated_at: "", signed_at: null })
+        : httpClient.post(`/contracts/${id}/transition/`, { status }),
   },
 
   subscriptions: {
-    list: (): Promise<Subscription[]> =>
-      USE_MOCK_API
-        ? mockDelay(mockSubscriptions)
-        : httpClient.get<Subscription[]>("/subscriptions"),
+    list: (): Promise<PaginatedResponse<Subscription>> =>
+      isUsingMockApi() ? mockDelay(mockPage(mockSubscriptions)) : httpClient.get("/subscriptions/"),
+    get: (id: number): Promise<Subscription> =>
+      isUsingMockApi()
+        ? mockDelay(mockSubscriptions.find((s) => s.id === id)!)
+        : httpClient.get(`/subscriptions/${id}/`),
+    entitlement: (id: number): Promise<Entitlement> =>
+      isUsingMockApi()
+        ? mockDelay({ entitled: true, status: "active", trial_end: null, current_period_end: null })
+        : httpClient.get(`/subscriptions/${id}/entitlement/`),
   },
 
   payments: {
-    list: (): Promise<Payment[]> =>
-      USE_MOCK_API
-        ? mockDelay(mockPayments)
-        : httpClient.get<Payment[]>("/payments"),
-    get: (id: string): Promise<Payment | undefined> =>
-      USE_MOCK_API
-        ? mockDelay(mockPayments.find((p) => p.id === id))
-        : httpClient.get<Payment>(`/payments/${id}`),
-  },
-
-  customers: {
-    list: (): Promise<Customer[]> =>
-      USE_MOCK_API
-        ? mockDelay(mockCustomers)
-        : httpClient.get<Customer[]>("/customers"),
-    get: (id: string): Promise<CustomerDetail | undefined> =>
-      USE_MOCK_API
-        ? mockDelay(mockCustomerDetails[id])
-        : httpClient.get<CustomerDetail>(`/customers/${id}`),
-  },
-
-  apps: {
-    list: (): Promise<ConsumingApp[]> =>
-      USE_MOCK_API
-        ? mockDelay(mockApps)
-        : httpClient.get<ConsumingApp[]>("/apps"),
-    revoke: (id: string): Promise<void> =>
-      USE_MOCK_API
-        ? mockDelay(undefined)
-        : httpClient.post<void>(`/apps/${id}/revoke`),
-  },
-
-  contractTemplates: {
-    list: (): Promise<ContractTemplate[]> =>
-      USE_MOCK_API
-        ? mockDelay(mockContractTemplates)
-        : httpClient.get<ContractTemplate[]>("/contract-templates"),
-    update: (id: string, body: string): Promise<ContractTemplate> =>
-      USE_MOCK_API
-        ? mockDelay({ ...mockContractTemplates.find((t) => t.id === id)!, body })
-        : httpClient.patch<ContractTemplate>(`/contract-templates/${id}`, { body }),
+    list: (): Promise<PaginatedResponse<Payment>> =>
+      isUsingMockApi() ? mockDelay(mockPage(mockPayments)) : httpClient.get("/payments/"),
+    get: (id: number): Promise<Payment> =>
+      isUsingMockApi()
+        ? mockDelay(mockPayments.find((p) => p.id === id)!)
+        : httpClient.get(`/payments/${id}/`),
+    /** `POST /payments` — payment initiation for a subscription's next period; no trailing slash. */
+    initiate: (subscriptionId: number): Promise<Payment> =>
+      isUsingMockApi()
+        ? mockDelay({
+            id: Math.floor(Math.random() * 100000),
+            subscription: subscriptionId,
+            amount_pyg: 500000,
+            status: "pending",
+            gateway: "pagopar",
+            gateway_order_id: "MOCK-ORDER",
+            checkout_url: "https://pagopar.example.com/checkout/mock",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            confirmed_at: null,
+          })
+        : httpClient.post("/payments", { subscription: subscriptionId }),
   },
 };
