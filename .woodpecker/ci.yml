@@ -1,0 +1,22 @@
+# Redeploys the Woodpecker server + agent stack itself.
+#
+# Deliberately NOT wired to push events: a pipeline that redeploys the CI
+# engine it is currently running on is inherently self-referential — a
+# `docker compose up -d` here can restart woodpecker-agent mid-pipeline (its
+# own execution), and a bad ci/docker-compose.yml change on main would then
+# auto-apply with no human in the loop and no easy way for Woodpecker to
+# report its own failure. Left as `event: manual`, triggered from the
+# Woodpecker UI ("Trigger pipeline") after reviewing the diff to ci/.
+when:
+  - event: manual
+
+steps:
+  - name: deploy
+    image: docker:cli
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /home/ubuntu/little-infra:/home/ubuntu/little-infra
+    commands:
+      - cd /home/ubuntu/little-infra/ci
+      - docker compose pull
+      - docker compose up -d --remove-orphans

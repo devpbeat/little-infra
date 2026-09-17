@@ -1,0 +1,55 @@
+# Deploys the payments stack (API + UI + dedicated Postgres) on the VPS.
+#
+# Triggered natively by Woodpecker on push to main, gated to the paths that
+# actually change this stack. GitHub Actions (payments-ci.yml,
+# payments-ui-ci.yml) build+push the images to GHCR on the same push, so
+# this pipeline races that build — see the retry loop below.
+#
+# NOTE: adjust HOST_REPO_PATH if the server checkout of this repo does not
+# live at /home/ubuntu/little-infra (see README.md "CI/CD with Woodpecker").
+when:
+  - event: push
+    branch: main
+    path:
+      include:
+        - "payments/**"
+        - "payments-ui/**"
+        - ".github/workflows/payments-ci.yml"
+        - ".github/workflows/payments-ui-ci.yml"
+
+steps:
+  - name: deploy
+    image: docker:cli
+    volumes:
+      # Docker socket: lets this step drive the host's dockerd (same
+      # pattern the woodpecker-agent itself uses, see ci/docker-compose.yml).
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Bind-mount the server's actual checkout at the SAME path inside the
+      # step container. This is required, not cosmetic: docker compose
+      # commands issued here go over the socket to the host's dockerd, so
+      # any relative paths it resolves (env_file: .env, named volumes,
+      # build context) must exist at that exact path on the HOST — a fresh
+      # Woodpecker workspace clone would not have payments/.env (gitignored,
+      # server-managed secrets) or match the host path docker uses.
+      - /home/ubuntu/little-infra:/home/ubuntu/little-infra
+    commands:
+      - cd /home/ubuntu/little-infra/payments
+      - |
+        echo "Pulling images (retrying — GHCR image may still be building in GitHub Actions)"
+        attempt=1
+        max_attempts=10
+        until docker compose pull; do
+          if [ "$attempt" -ge "$max_attempts" ]; then
+            echo "docker compose pull failed after ${max_attempts} attempts — giving up"
+            exit 1
+          fi
+          echo "pull failed (attempt ${attempt}/${max_attempts}), retrying in 15s..."
+          attempt=$((attempt + 1))
+          sleep 15
+        done
+      # Migrations run as an explicit one-off step before the app serves
+      # traffic — never in the container entrypoint (see payments/DEPLOY.md
+      # §4 and design §8: avoids migration races on scale-up, keeps
+      # rollbacks unambiguous).
+      - docker compose run --rm payments python manage.py migrate
+      - docker compose up -d --remove-orphans

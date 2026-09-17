@@ -1,0 +1,29 @@
+# Deploys the contracts stack on the VPS.
+#
+# Unlike payments/payments-ui, this stack has no GitHub Actions GHCR
+# build/push job (.github/workflows/contracts.yml only validates the build)
+# — the image is built locally on the server, so there is no GHCR-pull race
+# to retry around.
+#
+# NOTE: adjust the mounted path below if the server checkout of this repo
+# does not live at /home/ubuntu/little-infra (see README.md "CI/CD with Woodpecker").
+when:
+  - event: push
+    branch: main
+    path:
+      include:
+        - "contracts/**"
+        - ".github/workflows/contracts.yml"
+
+steps:
+  - name: deploy
+    image: docker:cli
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Same-path bind mount as the payments pipeline: docker compose here
+      # talks to the host's dockerd over the socket, so build context and
+      # env_file must resolve at the real host path.
+      - /home/ubuntu/little-infra:/home/ubuntu/little-infra
+    commands:
+      - cd /home/ubuntu/little-infra/contracts
+      - docker compose up -d --build --remove-orphans

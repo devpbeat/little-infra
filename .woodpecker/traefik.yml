@@ -1,0 +1,40 @@
+# Redeploys the traefik + portainer stack (edge proxy, dashboard, ACME) on
+# the VPS. No GHCR build is involved (public images only), so this uses a
+# lighter retry than payments/contracts — it exists mainly to tolerate
+# transient registry hiccups, not a GitHub Actions build race.
+#
+# CAUTION: this pipeline restarts the edge proxy for every service on the
+# box. A bad traefik.yml/dynamic.yml change here can take down all public
+# routes, including Woodpecker's own UI. Review changes to this stack
+# carefully before merging to main.
+#
+# NOTE: adjust the mounted path below if the server checkout of this repo
+# does not live at /home/ubuntu/little-infra (see README.md "CI/CD with Woodpecker").
+when:
+  - event: push
+    branch: main
+    path:
+      include:
+        - "traefik/**"
+
+steps:
+  - name: deploy
+    image: docker:cli
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /home/ubuntu/little-infra:/home/ubuntu/little-infra
+    commands:
+      - cd /home/ubuntu/little-infra/traefik
+      - |
+        attempt=1
+        max_attempts=3
+        until docker compose pull; do
+          if [ "$attempt" -ge "$max_attempts" ]; then
+            echo "docker compose pull failed after ${max_attempts} attempts — giving up"
+            exit 1
+          fi
+          echo "pull failed (attempt ${attempt}/${max_attempts}), retrying in 10s..."
+          attempt=$((attempt + 1))
+          sleep 10
+        done
+      - docker compose up -d --remove-orphans

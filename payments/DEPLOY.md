@@ -92,34 +92,29 @@ joined to the `platform` network with Traefik labels already present in
 
 ## 5. Woodpecker deploy trigger (task F5)
 
-This repo does not yet contain a `.woodpecker.yml` for `payments/` — add
-one when `payments/` moves to its own repository or gets its own GitHub
-Actions build/push job, following the root `README.md`'s documented
-pattern (`## CI/CD with Woodpecker`):
+Implemented in `.woodpecker/payments.yml` (repo root — see the root
+`README.md`'s `## CI/CD with Woodpecker` section for the full multi-service
+convention). Summary for this stack specifically:
 
-1. GitHub Actions builds `payments/Dockerfile` (`linux/arm64`), pushes to
-   `ghcr.io/devpbeat/payments:<tag>`, gated on `payments/**` path filter so
-   infra-only commits don't trigger a rebuild, and gated on the
-   pytest + ruff job passing first.
-2. On success, the workflow's deploy step calls the Woodpecker API to
-   trigger the pipeline:
-   ```yaml
-   - name: Trigger deploy
-     run: |
-       curl -s -X POST \
-         -H "Authorization: Bearer ${{ secrets.WOODPECKER_TOKEN }}" \
-         https://ci.ignitesolutions.click/api/repos/<org>/<repo>/pipelines
-   ```
-   `WOODPECKER_TOKEN` is a GitHub Actions repo secret, not a `payments/.env`
-   value — it authenticates against the Woodpecker server's API, it does
-   not run on the payments container.
-3. The `.woodpecker.yml` pipeline itself just runs `sh ./deploy.sh` on
-   `event: manual` (or `event: deployment` if using a dedicated deploy
-   trigger), matching every other stack in this repo.
+1. GitHub Actions (`.github/workflows/payments-ci.yml` and
+   `payments-ui-ci.yml`) build+push `ghcr.io/devpbeat/payments:<tag>` and
+   `ghcr.io/devpbeat/payments-ui:<tag>` on push to `main`, gated on their
+   respective path filters and on tests passing first.
+2. Woodpecker is activated directly on this GitHub repo and reacts to the
+   same push event natively — there is no curl/API trigger step in the
+   workflows and no `WOODPECKER_TOKEN` secret involved for this stack.
+3. `.woodpecker/payments.yml` bind-mounts the server's checkout (assumed
+   `/home/ubuntu/little-infra`) and `/var/run/docker.sock`, then: retries
+   `docker compose pull` (the GHCR push above can still be in flight when
+   Woodpecker's push event fires — same commit, two racing CI systems),
+   runs `docker compose run --rm payments python manage.py migrate` as the
+   same explicit pre-boot migration step `deploy.sh` uses (§4), then
+   `docker compose up -d --remove-orphans`.
 4. `WOODPECKER_ADMIN` (already configured for the `ci` stack, see
    `ci/env.example`) grants the account that owns the GitHub App admin
    rights in Woodpecker — no payments-specific Woodpecker config is needed
-   beyond activating the repo in the Woodpecker UI once.
+   beyond activating the repo (and enabling **Trusted** mode, required for
+   the docker-socket/host-path mounts) in the Woodpecker UI once.
 
 ## 6. Release checklist (manual, before declaring the service live)
 
