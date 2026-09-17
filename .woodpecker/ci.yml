@@ -15,8 +15,8 @@ steps:
     image: docker:cli
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - /root/little-infra:/root/little-infra
+      - /home/ubuntu/little-infra:/home/ubuntu/little-infra
     commands:
-      - cd /root/little-infra/ci
+      - cd /home/ubuntu/little-infra/ci
       - docker compose pull
       - docker compose up -d --remove-orphans

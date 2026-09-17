@@ -176,7 +176,7 @@ a single root `.woodpecker.yml`. See:
 
 **Host checkout path:** every pipeline step bind-mounts the server's actual
 repo checkout at the *same* path inside the step container (assumed
-`/root/little-infra` — adjust in each `.woodpecker/*.yml` if your server
+`/home/ubuntu/little-infra` — adjust in each `.woodpecker/*.yml` if your server
 uses a different path). This is required because `docker compose` runs
 against the host's dockerd over the mounted `/var/run/docker.sock`, so any
 relative paths it resolves (`env_file: .env`, build context, named

@@ -6,7 +6,7 @@
 # to retry around.
 #
 # NOTE: adjust the mounted path below if the server checkout of this repo
-# does not live at /root/little-infra (see README.md "CI/CD with Woodpecker").
+# does not live at /home/ubuntu/little-infra (see README.md "CI/CD with Woodpecker").
 when:
   - event: push
     branch: main
@@ -23,7 +23,7 @@ steps:
       # Same-path bind mount as the payments pipeline: docker compose here
       # talks to the host's dockerd over the socket, so build context and
       # env_file must resolve at the real host path.
-      - /root/little-infra:/root/little-infra
+      - /home/ubuntu/little-infra:/home/ubuntu/little-infra
     commands:
-      - cd /root/little-infra/contracts
+      - cd /home/ubuntu/little-infra/contracts
       - docker compose up -d --build --remove-orphans

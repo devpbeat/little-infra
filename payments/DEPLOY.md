@@ -104,7 +104,7 @@ convention). Summary for this stack specifically:
    same push event natively — there is no curl/API trigger step in the
    workflows and no `WOODPECKER_TOKEN` secret involved for this stack.
 3. `.woodpecker/payments.yml` bind-mounts the server's checkout (assumed
-   `/root/little-infra`) and `/var/run/docker.sock`, then: retries
+   `/home/ubuntu/little-infra`) and `/var/run/docker.sock`, then: retries
    `docker compose pull` (the GHCR push above can still be in flight when
    Woodpecker's push event fires — same commit, two racing CI systems),
    runs `docker compose run --rm payments python manage.py migrate` as the

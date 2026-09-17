@@ -6,7 +6,7 @@
 # this pipeline races that build — see the retry loop below.
 #
 # NOTE: adjust HOST_REPO_PATH if the server checkout of this repo does not
-# live at /root/little-infra (see README.md "CI/CD with Woodpecker").
+# live at /home/ubuntu/little-infra (see README.md "CI/CD with Woodpecker").
 when:
   - event: push
     branch: main
@@ -31,9 +31,9 @@ steps:
       # build context) must exist at that exact path on the HOST — a fresh
       # Woodpecker workspace clone would not have payments/.env (gitignored,
       # server-managed secrets) or match the host path docker uses.
-      - /root/little-infra:/root/little-infra
+      - /home/ubuntu/little-infra:/home/ubuntu/little-infra
     commands:
-      - cd /root/little-infra/payments
+      - cd /home/ubuntu/little-infra/payments
       - |
         echo "Pulling images (retrying — GHCR image may still be building in GitHub Actions)"
         attempt=1
