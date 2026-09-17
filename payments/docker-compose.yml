@@ -1,4 +1,24 @@
 services:
+  postgres:
+    image: postgres:16
+    container_name: payments-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-payments}
+      POSTGRES_USER: ${POSTGRES_USER:-payments}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - payments_pgdata:/var/lib/postgresql/data
+    # Internal-only: no ports published, not on the platform network, so
+    # only this stack's services can reach it.
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-payments} -d ${POSTGRES_DB:-payments}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   payments:
     image: ghcr.io/devpbeat/payments:${PAYMENTS_TAG:-latest}
     container_name: payments
@@ -6,8 +26,12 @@ services:
     env_file: .env
     security_opt:
       - no-new-privileges:true
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - platform
+      - internal
     labels:
       - traefik.enable=true
       - traefik.http.routers.payments.rule=Host(`payments.ignitesolutions.click`)
@@ -29,6 +53,7 @@ services:
       - no-new-privileges:true
     networks:
       - platform
+      - internal
     labels:
       - traefik.enable=true
       - traefik.http.routers.payments-ui.rule=Host(`pay.ignitesolutions.click`)
@@ -43,11 +68,17 @@ services:
       - homepage.description=Billing dashboard for the payments microservice
 
 networks:
-  # Joins the shared `platform` stack network (see design §6 D2 and §8) so
-  # this service can reach the shared `postgres` container by name. The
-  # network is created by platform/docker-compose.yml, NOT by this file —
+  # `platform` is the shared external network used by Traefik to route to
+  # this stack's services. It is created by platform/docker-compose.yml —
   # `platform` must be deployed first, and PLATFORM_NETWORK must resolve to
   # the same value used there (see payments/DEPLOY.md).
   platform:
     external: true
     name: ${PLATFORM_NETWORK}
+  # `internal` is private to this stack: app <-> UI proxy <-> database.
+  # The database is reachable only here (decision: dedicated Postgres per
+  # service for now; may consolidate to a single instance later).
+  internal:
+
+volumes:
+  payments_pgdata:
