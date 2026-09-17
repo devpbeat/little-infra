@@ -4,6 +4,7 @@ from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import permissions, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -119,6 +120,32 @@ class PaymentViewSet(ScopedByAppMixin, viewsets.ReadOnlyModelViewSet):
     serializer_class = PaymentSerializer
     queryset = Payment.objects.select_related("subscription__customer").order_by("-created_at")
     app_scope_field = "subscription__customer__app"
+
+    @action(detail=True, methods=["post"])
+    def refresh(self, request, pk=None):
+        """Poll Pagopar for the order's current status and apply it.
+
+        Pagopar validation circuit "Paso 3" (the merchant site queries an
+        order's state) and the operator's manual fallback when a webhook
+        was missed. Reuses the same state machinery as webhooks, so a
+        confirmed payment stays final and confirmation extends the period
+        exactly once.
+        """
+        payment = self.get_object()
+        if not payment.gateway_order_id:
+            return Response(
+                {"detail": "Payment has no gateway order to query."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        gateway = get_payment_gateway()
+        gateway_status = gateway.get_charge_status(payment.gateway_order_id)
+        process_webhook_status(
+            gateway=payment.gateway,
+            gateway_order_id=payment.gateway_order_id,
+            gateway_status=gateway_status,
+        )
+        payment.refresh_from_db()
+        return Response(PaymentSerializer(payment).data)
 
 
 class PagoparWebhookView(APIView):

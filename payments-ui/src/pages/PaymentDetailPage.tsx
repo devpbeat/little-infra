@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { QRCodeSVG } from "qrcode.react";
 import { PageHeader } from "../components/ui/AppLayout";
 import { Badge, Card } from "../components/ui";
@@ -8,10 +8,18 @@ import { formatDateTime, formatPyg } from "../lib/format";
 
 export function PaymentDetailPage() {
   const { paymentId } = useParams<{ paymentId: string }>();
+  const queryClient = useQueryClient();
   const paymentQuery = useQuery({
     queryKey: ["payment", paymentId],
     queryFn: () => paymentsApi.payments.get(Number(paymentId)),
     enabled: Boolean(paymentId),
+  });
+  const refresh = useMutation({
+    mutationFn: () => paymentsApi.payments.refresh(Number(paymentId)),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(["payment", paymentId], updated);
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
+    },
   });
 
   if (paymentQuery.isLoading) {
@@ -28,7 +36,18 @@ export function PaymentDetailPage() {
       <PageHeader
         title={`Payment #${payment.id}`}
         description={`Subscription #${payment.subscription} · ${formatDateTime(payment.created_at)}`}
-        actions={<Badge tone={payment.status} />}
+        actions={
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+            <Badge tone={payment.status} />
+            <button
+              type="button"
+              disabled={refresh.isPending || !payment.gateway_order_id}
+              onClick={() => refresh.mutate()}
+            >
+              {refresh.isPending ? "Checking…" : "Check in Pagopar"}
+            </button>
+          </span>
+        }
       />
 
       <div className="two-col">
