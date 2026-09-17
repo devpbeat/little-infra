@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Customers — Payments Admin</title>
+<link rel="stylesheet" href="mockup.css" />
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">Payments<span>Admin</span></div>
+    <nav class="nav">
+      <a href="01-overview.html">Overview</a>
+      <a href="02-apps-keys.html">Apps &amp; API Keys</a>
+      <a href="03-customers-list.html" class="active">Customers</a>
+      <a href="04-contract-templates.html">Contract Templates</a>
+    </nav>
+  </aside>
+  <main class="main">
+    <div class="page-header">
+      <div>
+        <h1>Customers</h1>
+        <p>All accounts with a contract, subscription, or payment history</p>
+      </div>
+      <button class="btn secondary">Filter</button>
+    </div>
+
+    <div class="card">
+      <table>
+        <thead><tr><th>Customer</th><th>Deal type</th><th>Contract status</th><th>Subscription</th><th>Lifetime paid</th></tr></thead>
+        <tbody>
+          <tr><td><a href="03-customers-detail.html" style="color:#e6e9f0;text-decoration:none;font-weight:600">Acme Corp</a></td><td>SaaS Monthly</td><td><span class="badge active">signed</span></td><td><span class="badge active">active</span></td><td>$1,789</td></tr>
+          <tr><td>Nordic Labs</td><td>SaaS Annual</td><td><span class="badge active">signed</span></td><td><span class="badge active">active</span></td><td>$99</td></tr>
+          <tr><td>Vera Studio</td><td>SaaS Monthly</td><td><span class="badge pending">pending</span></td><td><span class="badge trial">trial</span></td><td>$0</td></tr>
+          <tr><td>Kilo Systems</td><td>Fixed (with ownership)</td><td><span class="badge active">signed</span></td><td>—</td><td>$4,500</td></tr>
+          <tr><td>Blue Harbor</td><td>Fixed (hosting, no ownership)</td><td><span class="badge active">signed</span></td><td><span class="badge past_due">past_due</span></td><td>$2,388</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+</body>
+</html>

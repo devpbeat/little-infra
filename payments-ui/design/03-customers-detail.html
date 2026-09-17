@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Acme Corp — Customers — Payments Admin</title>
+<link rel="stylesheet" href="mockup.css" />
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">Payments<span>Admin</span></div>
+    <nav class="nav">
+      <a href="01-overview.html">Overview</a>
+      <a href="02-apps-keys.html">Apps &amp; API Keys</a>
+      <a href="03-customers-list.html" class="active">Customers</a>
+      <a href="04-contract-templates.html">Contract Templates</a>
+    </nav>
+  </aside>
+  <main class="main">
+    <div class="page-header">
+      <div>
+        <h1>Acme Corp</h1>
+        <p>acme@example.com · Customer since 2026-03-02</p>
+      </div>
+      <button class="btn secondary">Edit</button>
+    </div>
+
+    <div class="stat-row" style="margin-bottom:24px">
+      <div class="stat card"><div class="label">Contract</div><div class="val">SaaS Monthly · signed</div></div>
+      <div class="stat card"><div class="label">Subscription</div><div class="val"><span class="badge active">active</span></div></div>
+      <div class="stat card"><div class="label">Lifetime paid</div><div class="val">$1,789.00</div></div>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <div class="section-title">Status Timeline</div>
+        <div class="card">
+          <ul class="timeline">
+            <li><div class="t-date">2026-09-01</div><div class="t-title">Payment succeeded — $149.00</div></li>
+            <li><div class="t-date">2026-08-01</div><div class="t-title">Payment succeeded — $149.00</div></li>
+            <li><div class="t-date">2026-03-05</div><div class="t-title">Subscription activated</div></li>
+            <li><div class="t-date">2026-03-02</div><div class="t-title">Contract signed (DocuSign)</div></li>
+            <li><div class="t-date">2026-02-28</div><div class="t-title">Contract sent for signature</div></li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <div class="section-title">Recent Payments</div>
+        <div class="card">
+          <table>
+            <thead><tr><th>Date</th><th>Amount</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td>2026-09-01</td><td>$149.00</td><td><span class="badge succeeded">succeeded</span></td></tr>
+              <tr><td>2026-08-01</td><td>$149.00</td><td><span class="badge succeeded">succeeded</span></td></tr>
+              <tr><td>2026-07-01</td><td>$149.00</td><td><span class="badge succeeded">succeeded</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

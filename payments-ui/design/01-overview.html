@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Overview — Payments Admin</title>
+<link rel="stylesheet" href="mockup.css" />
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">Payments<span>Admin</span></div>
+    <nav class="nav">
+      <a href="01-overview.html" class="active">Overview</a>
+      <a href="02-apps-keys.html">Apps &amp; API Keys</a>
+      <a href="03-customers-list.html">Customers</a>
+      <a href="04-contract-templates.html">Contract Templates</a>
+    </nav>
+  </aside>
+  <main class="main">
+    <div class="page-header">
+      <div>
+        <h1>Overview</h1>
+        <p>Live snapshot of subscriptions, trials, and payments</p>
+      </div>
+      <button class="btn secondary">Export report</button>
+    </div>
+
+    <div class="grid-kpi">
+      <div class="card"><h3>Active Subscriptions</h3><div class="value">128</div><div class="delta">+6 this month</div></div>
+      <div class="card"><h3>Trials Ending Soon</h3><div class="value">9</div><div class="delta" style="color:#fbbf24">within 7 days</div></div>
+      <div class="card"><h3>MRR</h3><div class="value">$14,320</div><div class="delta">+4.2% MoM</div></div>
+      <div class="card"><h3>Payments (30d)</h3><div class="value">312</div><div class="delta">98.4% success rate</div></div>
+    </div>
+
+    <div class="section-title">Active Subscriptions</div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Customer</th><th>Plan</th><th>Status</th><th>Renewal</th><th>MRR</th></tr></thead>
+        <tbody>
+          <tr><td>Acme Corp</td><td>SaaS Monthly</td><td><span class="badge active">active</span></td><td>2026-10-01</td><td>$149</td></tr>
+          <tr><td>Nordic Labs</td><td>SaaS Annual</td><td><span class="badge active">active</span></td><td>2027-01-14</td><td>$99</td></tr>
+          <tr><td>Vera Studio</td><td>SaaS Monthly</td><td><span class="badge trial">trial</span></td><td>2026-09-22</td><td>$0</td></tr>
+          <tr><td>Blue Harbor</td><td>SaaS Monthly</td><td><span class="badge past_due">past_due</span></td><td>2026-09-12</td><td>$199</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-title">Recent Payments</div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Date</th><th>Customer</th><th>Amount</th><th>Method</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>2026-09-15</td><td>Acme Corp</td><td>$149.00</td><td>Pagopar</td><td><span class="badge succeeded">succeeded</span></td></tr>
+          <tr><td>2026-09-14</td><td>Nordic Labs</td><td>$99.00</td><td>Pagopar</td><td><span class="badge succeeded">succeeded</span></td></tr>
+          <tr><td>2026-09-13</td><td>Blue Harbor</td><td>$199.00</td><td>Pagopar</td><td><span class="badge failed">failed</span></td></tr>
+          <tr><td>2026-09-11</td><td>Kilo Systems</td><td>$4,500.00</td><td>Pagopar</td><td><span class="badge pending">pending</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+</body>
+</html>

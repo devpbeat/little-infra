@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Apps & API Keys — Payments Admin</title>
+<link rel="stylesheet" href="mockup.css" />
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">Payments<span>Admin</span></div>
+    <nav class="nav">
+      <a href="01-overview.html">Overview</a>
+      <a href="02-apps-keys.html" class="active">Apps &amp; API Keys</a>
+      <a href="03-customers-list.html">Customers</a>
+      <a href="04-contract-templates.html">Contract Templates</a>
+    </nav>
+  </aside>
+  <main class="main">
+    <div class="page-header">
+      <div>
+        <h1>Consuming Apps &amp; API Keys</h1>
+        <p>Applications integrated with the payments API</p>
+      </div>
+      <button class="btn">+ New App</button>
+    </div>
+
+    <div class="card">
+      <table>
+        <thead><tr><th>App</th><th>Environment</th><th>API Key</th><th>Created</th><th>Last used</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>ara-frontend</td><td>production</td><td><span class="code-pill">pk_live_••••3f2a</span></td><td>2026-03-02</td><td>2 min ago</td><td><span class="badge active">active</span></td><td><button class="btn secondary">Revoke</button></td></tr>
+          <tr><td>ara-frontend</td><td>staging</td><td><span class="code-pill">pk_test_••••88ce</span></td><td>2026-03-02</td><td>1 day ago</td><td><span class="badge active">active</span></td><td><button class="btn secondary">Revoke</button></td></tr>
+          <tr><td>internal-cli</td><td>production</td><td><span class="code-pill">pk_live_••••11de</span></td><td>2025-11-19</td><td>34 days ago</td><td><span class="badge past_due">disabled</span></td><td><button class="btn secondary">Enable</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+</body>
+</html>

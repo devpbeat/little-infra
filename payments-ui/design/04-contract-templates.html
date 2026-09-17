@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Contract Templates — Payments Admin</title>
+<link rel="stylesheet" href="mockup.css" />
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">Payments<span>Admin</span></div>
+    <nav class="nav">
+      <a href="01-overview.html">Overview</a>
+      <a href="02-apps-keys.html">Apps &amp; API Keys</a>
+      <a href="03-customers-list.html">Customers</a>
+      <a href="04-contract-templates.html" class="active">Contract Templates</a>
+    </nav>
+  </aside>
+  <main class="main">
+    <div class="page-header">
+      <div>
+        <h1>Contract Templates</h1>
+        <p>Manage the three deal-type templates used to generate customer contracts</p>
+      </div>
+      <button class="btn">✨ AI-generate</button>
+    </div>
+
+    <div class="deal-cards">
+      <div class="card selected">
+        <h3>SaaS</h3>
+        <div class="value" style="font-size:16px">Monthly / Annual</div>
+        <p style="color:var(--text-dim);font-size:12px;margin:8px 0 0">Recurring subscription billing, no code ownership transfer.</p>
+      </div>
+      <div class="card">
+        <h3>Fixed Price</h3>
+        <div class="value" style="font-size:16px">With code ownership</div>
+        <p style="color:var(--text-dim);font-size:12px;margin:8px 0 0">One-time payment, IP transferred to client on completion.</p>
+      </div>
+      <div class="card">
+        <h3>Fixed Price</h3>
+        <div class="value" style="font-size:16px">No ownership + hosting</div>
+        <p style="color:var(--text-dim);font-size:12px;margin:8px 0 0">One-time build fee plus recurring hosting; IP retained.</p>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active">Editor</div>
+      <div class="tab">Placeholder preview</div>
+      <div class="tab">Version history</div>
+    </div>
+
+    <div class="editor-panel">
+      <div class="card">
+        <h3 style="margin-bottom:10px">Template source</h3>
+        <textarea class="editor-textarea">This Agreement is entered into by {{company_name}} ("Provider") and {{customer_name}} ("Client") on {{contract_date}}.
+
+Plan: {{plan_name}}
+Billing: {{billing_amount}} / {{billing_interval}}
+
+...</textarea>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:10px">Rendered preview</h3>
+        <div style="background:var(--bg-panel-alt);border:1px solid var(--border);border-radius:var(--radius);padding:16px;font-size:13px;line-height:1.6">
+          This Agreement is entered into by <strong>Ignite Solutions</strong> ("Provider") and <strong>Acme Corp</strong> ("Client") on <strong>2026-09-16</strong>.<br/><br/>
+          Plan: <strong>SaaS Monthly</strong><br/>
+          Billing: <strong>$149.00</strong> / <strong>month</strong>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>
