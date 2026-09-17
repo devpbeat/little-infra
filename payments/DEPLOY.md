@@ -15,6 +15,21 @@ This document is the Slice F deliverable: everything needed to take
   first deploy, or the `myresolver` ACME HTTP-01 challenge will fail and
   Traefik will not obtain a certificate.
 
+## 1a. Payments UI (dashboard)
+
+`docker-compose.yml` also defines a `payments-ui` service: an nginx image
+built from `payments-ui/Dockerfile` that serves the React dashboard's
+static build and reverse-proxies `/api/`, `/admin/`, and `/static/` to the
+`payments` container by its compose service name, so the UI keeps the
+same same-origin model it uses in dev (see `payments-ui/vite.config.ts`).
+It is routed separately at `pay.ignitesolutions.click` (Traefik, same
+`myresolver` certresolver and `secure-headers@file` middleware as
+`payments`) — `payments.ignitesolutions.click` continues to point only
+at the API service. Its image tag is controlled by `PAYMENTS_UI_TAG`
+(defaults to `latest`), analogous to `PAYMENTS_TAG`. DNS for
+`pay.ignitesolutions.click` must also resolve to the VPS before first
+deploy for the same ACME reason as above.
+
 ## 2. Environment
 
 `deploy.sh` auto-creates `payments/.env` from `payments/env.example` on

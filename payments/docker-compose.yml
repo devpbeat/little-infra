@@ -21,6 +21,27 @@ services:
       - homepage.href=https://payments.ignitesolutions.click
       - homepage.description=B2B subscription billing microservice
 
+  payments-ui:
+    image: ghcr.io/devpbeat/payments-ui:${PAYMENTS_UI_TAG:-latest}
+    container_name: payments-ui
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - platform
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.payments-ui.rule=Host(`pay.ignitesolutions.click`)
+      - traefik.http.routers.payments-ui.entrypoints=websecure
+      - traefik.http.routers.payments-ui.tls=true
+      - traefik.http.routers.payments-ui.tls.certresolver=myresolver
+      - traefik.http.routers.payments-ui.middlewares=secure-headers@file
+      - traefik.http.services.payments-ui.loadbalancer.server.port=80
+      - homepage.group=Services
+      - homepage.name=Payments UI
+      - homepage.href=https://pay.ignitesolutions.click
+      - homepage.description=Billing dashboard for the payments microservice
+
 networks:
   # Joins the shared `platform` stack network (see design §6 D2 and §8) so
   # this service can reach the shared `postgres` container by name. The
