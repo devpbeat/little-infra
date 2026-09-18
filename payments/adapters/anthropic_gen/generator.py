@@ -82,7 +82,9 @@ def generate_template_body(*, deal_type: str, name: str, instructions: str = "")
     return "".join(block.text for block in response.content if block.type == "text").strip()
 
 
-def templatize_document(*, file_bytes: bytes, filename: str, deal_type: str) -> str:
+def templatize_document(
+    *, file_bytes: bytes, filename: str, deal_type: str, instructions: str = ""
+) -> str:
     """Convert an uploaded contract (PDF or markdown/text) into a template.
 
     Claude rewrites the document as clean markdown and replaces the
@@ -116,11 +118,17 @@ def templatize_document(*, file_bytes: bytes, filename: str, deal_type: str) -> 
                     "data": base64.b64encode(file_bytes).decode(),
                 },
             },
-            {"type": "text", "text": f"Templatize this contract (deal type: {deal_type})."},
+            {
+                "type": "text",
+                "text": f"Templatize this contract (deal type: {deal_type})."
+                + (f"\nOperator instructions: {instructions}" if instructions else ""),
+            },
         ]
     else:
         content = (
-            f"Templatize this contract (deal type: {deal_type}):\n\n"
+            f"Templatize this contract (deal type: {deal_type})."
+            + (f"\nOperator instructions: {instructions}" if instructions else "")
+            + "\n\n"
             + file_bytes.decode("utf-8", errors="replace")
         )
 
