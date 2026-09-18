@@ -19,6 +19,10 @@ export function CustomerSignupPage() {
   const [externalRef, setExternalRef] = useState("");
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [legalName, setLegalName] = useState("");
+  const [taxId, setTaxId] = useState("");
+  const [address, setAddress] = useState("");
+  const [phone, setPhone] = useState("");
   const [appId, setAppId] = useState<number | "">("");
 
   // Staff sessions must pick which app the customer belongs to; API-key
@@ -35,7 +39,15 @@ export function CustomerSignupPage() {
 
   const signup = useMutation({
     mutationFn: () => {
-      const payload = { external_ref: externalRef, email, display_name: displayName };
+      const payload = {
+        external_ref: externalRef,
+        email,
+        display_name: displayName,
+        legal_name: legalName,
+        tax_id: taxId,
+        address,
+        phone,
+      };
       return isStaffMode
         ? httpClient.post<{ external_ref: string }>(`/apps/${appId}/customers/`, payload)
         : paymentsApi.customers.signup(payload);
@@ -103,6 +115,24 @@ export function CustomerSignupPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
+          </label>
+          <label>
+            <div className="stat-card-label">Legal name (razón social)</div>
+            <input className="text-input" value={legalName} onChange={(e) => setLegalName(e.target.value)} />
+          </label>
+          <div style={{ display: "flex", gap: 10 }}>
+            <label style={{ flex: 1 }}>
+              <div className="stat-card-label">RUC / CI</div>
+              <input className="text-input" value={taxId} onChange={(e) => setTaxId(e.target.value)} />
+            </label>
+            <label style={{ flex: 1 }}>
+              <div className="stat-card-label">Phone</div>
+              <input className="text-input" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            </label>
+          </div>
+          <label>
+            <div className="stat-card-label">Address</div>
+            <input className="text-input" value={address} onChange={(e) => setAddress(e.target.value)} />
           </label>
 
           {signup.isError && (

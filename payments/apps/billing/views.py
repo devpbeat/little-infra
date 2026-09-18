@@ -92,13 +92,10 @@ class PaymentInitiationView(APIView):
             description=f"{subscription.plan.name} — {customer.app.name}",
             buyer_name=customer.display_name or customer.external_ref,
             buyer_email=customer.email,
-            # Customer has no document/phone fields (design §3 does not
-            # define them) — Pagopar's Buyer payload requires both.
-            # Placeholder values are used and documented here as a known
-            # gap; a follow-up slice should either add these fields to
-            # Customer or confirm Pagopar accepts blanks in practice.
-            buyer_document=getattr(customer, "tax_id", "") or "0000000",
-            buyer_phone=getattr(customer, "phone", "") or "000000000",
+            # Real customer identity when captured; documented fallbacks
+            # otherwise (Pagopar's Buyer payload requires both fields).
+            buyer_document=customer.tax_id or "0000000",
+            buyer_phone=customer.phone or "000000000",
         )
         try:
             result = gateway.create_charge(charge_request)
