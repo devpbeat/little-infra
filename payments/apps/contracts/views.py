@@ -239,7 +239,10 @@ class ContractTemplateViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         body = templatize_document(
-            file_bytes=upload.read(), filename=upload.name, deal_type=deal_type
+            file_bytes=upload.read(),
+            filename=upload.name,
+            deal_type=deal_type,
+            instructions=str(request.data.get("instructions") or ""),
         )
         template = ContractTemplate.objects.create(
             name=name, deal_type=deal_type, body=body, is_approved=False

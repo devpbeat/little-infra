@@ -64,6 +64,7 @@ export function ContractTemplatesPage() {
       form.append("file", uploadFile!);
       form.append("name", genForm.name);
       form.append("deal_type", genForm.deal_type);
+      if (genForm.instructions) form.append("instructions", genForm.instructions);
       return httpClient.postForm<TemplateRow>("/contract-templates/templatize/", form);
     },
     onSuccess: (created) => {
