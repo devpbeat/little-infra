@@ -13,6 +13,32 @@ from .models import Customer
 from .serializers import CustomerSerializer, EntitlementSerializer, SignupSerializer
 
 
+def provision_customer(app, validated_data):
+    """Create customer + contract (from the app's template) + trial.
+
+    Shared by machine signup (API key) and staff creation (dashboard).
+    Returns (customer, created) — idempotent by (app, external_ref).
+    Raises ValueError when the app lacks its template/plan wiring.
+    """
+    existing = Customer.objects.filter(
+        app=app, external_ref=validated_data["external_ref"]
+    ).first()
+    if existing is not None:
+        return existing, False
+    if app.contract_template is None or app.default_plan is None:
+        raise ValueError("App is not provisioned with a contract_template and default_plan.")
+    try:
+        with transaction.atomic():
+            customer = Customer.objects.create(app=app, **validated_data)
+            contract = Contract.objects.create(customer=customer, template=app.contract_template)
+            contract.transition_to(ContractStatus.GENERATED)
+            Subscription.start_trial(customer, app.default_plan, trial_days=app.trial_days)
+    except IntegrityError:
+        # A concurrent signup with the same external_ref won the race.
+        return Customer.objects.get(app=app, external_ref=validated_data["external_ref"]), False
+    return customer, True
+
+
 class SignupView(APIView):
     """`POST /api/v1/customers/signup` (spec: client-onboarding).
 
@@ -26,35 +52,14 @@ class SignupView(APIView):
     def post(self, request):
         serializer = SignupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        app = request.app
-
-        existing = Customer.objects.filter(
-            app=app, external_ref=serializer.validated_data["external_ref"]
-        ).first()
-        if existing is not None:
-            return Response(CustomerSerializer(existing).data, status=status.HTTP_200_OK)
-
-        if app.contract_template is None or app.default_plan is None:
-            return Response(
-                {"detail": "App is not provisioned with a contract_template and default_plan."},
-                status=status.HTTP_409_CONFLICT,
-            )
-
         try:
-            with transaction.atomic():
-                customer = Customer.objects.create(app=app, **serializer.validated_data)
-                contract = Contract.objects.create(customer=customer, template=app.contract_template)
-                contract.transition_to(ContractStatus.GENERATED)
-                Subscription.start_trial(customer, app.default_plan, trial_days=app.trial_days)
-        except IntegrityError:
-            # A concurrent signup with the same external_ref won the race;
-            # return the row it created (idempotent behavior).
-            existing = Customer.objects.get(
-                app=app, external_ref=serializer.validated_data["external_ref"]
-            )
-            return Response(CustomerSerializer(existing).data, status=status.HTTP_200_OK)
-
-        return Response(CustomerSerializer(customer).data, status=status.HTTP_201_CREATED)
+            customer, created = provision_customer(request.app, serializer.validated_data)
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_409_CONFLICT)
+        return Response(
+            CustomerSerializer(customer).data,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
 
 
 class CustomerViewSet(ScopedByAppMixin, viewsets.ReadOnlyModelViewSet):
