@@ -45,4 +45,8 @@ ENTRYPOINT ["/app/entrypoint.sh"]
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8000/api/v1/health || exit 1
 
-CMD ["gunicorn", "config.wsgi:application", "--workers", "3", "--bind", "0.0.0.0:8000"]
+# --timeout 180: AI template generation/templatization holds a worker for
+# 30-90s; the 30s default killed workers mid-stream (WORKER TIMEOUT). With
+# 3 sync workers and admin-only, low-frequency AI actions, a long timeout
+# is the pragmatic choice over async offloading at this scale.
+CMD ["gunicorn", "config.wsgi:application", "--workers", "3", "--timeout", "180", "--bind", "0.0.0.0:8000"]
