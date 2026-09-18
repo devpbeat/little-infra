@@ -23,10 +23,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (apiKey) {
     headers.Authorization = `Api-Key ${apiKey}`;
   }
-  // Session (staff login) mode: DRF's SessionAuthentication enforces CSRF
-  // on unsafe methods; the token cookie is set at login.
+  // DRF's SessionAuthentication enforces CSRF on unsafe methods. Attach
+  // the token whenever the cookie exists — even in API-key mode, because
+  // staff-only endpoints (templates, key management) ignore API keys and
+  // fall through to the session. Harmless for pure API-key requests.
   const method = (init?.method ?? "GET").toUpperCase();
-  if (!apiKey && method !== "GET") {
+  if (method !== "GET") {
     const csrf = getCookie("csrftoken");
     if (csrf) headers["X-CSRFToken"] = csrf;
   }
