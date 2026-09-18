@@ -12,6 +12,7 @@ dependencies = [
   "whitenoise>=6.6,<7.0",
   "python-dotenv>=1.0,<2.0",
   "pagopar-sdk==0.1.1",
+  "anthropic>=1.0,<2.0",
 ]
 
 [project.optional-dependencies]
