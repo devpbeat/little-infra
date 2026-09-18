@@ -30,6 +30,10 @@ def build_contract_context(contract: Contract) -> dict:
     subscription = customer.subscriptions.order_by("-created_at").first()
     return {
         "client_name": customer.display_name or customer.external_ref,
+        "client_legal_name": customer.legal_name or customer.display_name or customer.external_ref,
+        "client_ruc": customer.tax_id or "",
+        "client_address": customer.address or "",
+        "client_phone": customer.phone or "",
         "client_email": customer.email or "",
         "app_name": app.name,
         "plan_name": plan.name if plan else "",
@@ -257,6 +261,10 @@ class ContractTemplateViewSet(viewsets.ModelViewSet):
         template = self.get_object()
         sample = {
             "client_name": "ACME S.A.",
+            "client_legal_name": "ACME Sociedad Anónima",
+            "client_ruc": "80012345-6",
+            "client_address": "Avda. Mariscal López 1234, Asunción",
+            "client_phone": "+595981123456",
             "client_email": "billing@acme.example",
             "app_name": "sample-app",
             "plan_name": "Standard Monthly",

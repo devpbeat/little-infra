@@ -14,6 +14,13 @@ class Customer(models.Model):
     external_ref = models.CharField(max_length=255)
     email = models.EmailField(blank=True)
     display_name = models.CharField(max_length=255, blank=True)
+    # Legal/contact identity — feeds contract rendering ({{client_legal_name}},
+    # {{client_ruc}}, {{client_address}}) and Pagopar's buyer payload
+    # (document/phone were placeholder values before these existed).
+    legal_name = models.CharField(max_length=255, blank=True)
+    tax_id = models.CharField(max_length=32, blank=True, help_text="RUC or CI.")
+    address = models.CharField(max_length=255, blank=True)
+    phone = models.CharField(max_length=32, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

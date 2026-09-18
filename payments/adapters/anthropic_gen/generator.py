@@ -20,6 +20,10 @@ from apps.contracts.models import DealType
 # instructed to use exactly these and no others.
 AVAILABLE_PLACEHOLDERS = [
     "client_name",
+    "client_legal_name",
+    "client_ruc",
+    "client_address",
+    "client_phone",
     "client_email",
     "app_name",
     "plan_name",

@@ -12,6 +12,10 @@ class SignupSerializer(serializers.Serializer):
     external_ref = serializers.CharField(max_length=255)
     email = serializers.EmailField(required=False, allow_blank=True, default="")
     display_name = serializers.CharField(max_length=255, required=False, allow_blank=True, default="")
+    legal_name = serializers.CharField(max_length=255, required=False, allow_blank=True, default="")
+    tax_id = serializers.CharField(max_length=32, required=False, allow_blank=True, default="")
+    address = serializers.CharField(max_length=255, required=False, allow_blank=True, default="")
+    phone = serializers.CharField(max_length=32, required=False, allow_blank=True, default="")
 
 
 class ContractSummarySerializer(serializers.ModelSerializer):
@@ -32,7 +36,18 @@ class CustomerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Customer
-        fields = ["external_ref", "email", "display_name", "created_at", "contract", "subscription"]
+        fields = [
+            "external_ref",
+            "email",
+            "display_name",
+            "legal_name",
+            "tax_id",
+            "address",
+            "phone",
+            "created_at",
+            "contract",
+            "subscription",
+        ]
 
     def get_contract(self, customer: Customer):
         contract = customer.contracts.order_by("-created_at").first()
