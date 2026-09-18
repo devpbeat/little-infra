@@ -1,0 +1,1073 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Payments API",
+        "version": "0.1.0",
+        "description": "B2B subscription billing, contract tracking, and payment processing."
+    },
+    "paths": {
+        "/api/v1/auth/login": {
+            "post": {
+                "operationId": "v1_auth_login_create",
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/logout": {
+            "post": {
+                "operationId": "v1_auth_logout_create",
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/me": {
+            "get": {
+                "operationId": "v1_auth_me_retrieve",
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/contracts/": {
+            "get": {
+                "operationId": "v1_contracts_list",
+                "description": "`GET /contracts`, `/contracts/{id}`, `POST /contracts/{id}/transition`.\n\nScoped one hop from `ConsumingApp` via `customer__app` — `Contract` has\nno direct `app` FK (design §3).",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "description": "A page number within the paginated result set.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedContractList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/contracts/{id}/": {
+            "get": {
+                "operationId": "v1_contracts_retrieve",
+                "description": "`GET /contracts`, `/contracts/{id}`, `POST /contracts/{id}/transition`.\n\nScoped one hop from `ConsumingApp` via `customer__app` — `Contract` has\nno direct `app` FK (design §3).",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "A unique integer value identifying this contract.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Contract"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/contracts/{id}/transition/": {
+            "post": {
+                "operationId": "v1_contracts_transition_create",
+                "description": "`GET /contracts`, `/contracts/{id}`, `POST /contracts/{id}/transition`.\n\nScoped one hop from `ConsumingApp` via `customer__app` — `Contract` has\nno direct `app` FK (design §3).",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "A unique integer value identifying this contract.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Contract"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Contract"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Contract"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Contract"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/customers/": {
+            "get": {
+                "operationId": "v1_customers_list",
+                "description": "`GET /customers/{external_ref}` and `/customers/{external_ref}/entitlement`.",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "description": "A page number within the paginated result set.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedCustomerList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/customers/{external_ref}/": {
+            "get": {
+                "operationId": "v1_customers_retrieve",
+                "description": "`GET /customers/{external_ref}` and `/customers/{external_ref}/entitlement`.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "external_ref",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Customer"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/customers/{external_ref}/entitlement/": {
+            "get": {
+                "operationId": "v1_customers_entitlement_retrieve",
+                "description": "`GET /customers/{external_ref}` and `/customers/{external_ref}/entitlement`.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "external_ref",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Customer"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/customers/signup": {
+            "post": {
+                "operationId": "v1_customers_signup_create",
+                "description": "`POST /api/v1/customers/signup` (spec: client-onboarding).\n\nIdempotent by `(app, external_ref)`: retrying with the same identifying\ncredentials returns the already-provisioned Customer/Contract/Subscription\ninstead of creating duplicates (design §5).",
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/payments": {
+            "post": {
+                "operationId": "v1_payments_create",
+                "description": "`POST /api/v1/payments` (spec: payment-processing, \"Payment Initiation\").\n\nCreates a `Payment` row scoped to the caller's app (via the requested\nSubscription, which is scoped by `customer__app`) and asks the\nconfigured `PaymentGateway` to create a charge for it. The gateway's\n`checkout_url` (which may carry a QR payload, per the spike — the SDK\ndoes not parse or guarantee a separate `qr_payload` field, see\nsdd/payments-microservice/spike-pagopar finding (a)) is returned as-is;\nthis service does not attempt to render or interpret it.",
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/payments/": {
+            "get": {
+                "operationId": "v1_payments_list",
+                "description": "`GET /payments`, `/payments/{id}` — history/status (design §5).",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "description": "A page number within the paginated result set.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedPaymentList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/payments/{id}/": {
+            "get": {
+                "operationId": "v1_payments_retrieve",
+                "description": "`GET /payments`, `/payments/{id}` — history/status (design §5).",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "A unique integer value identifying this payment.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Payment"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/payments/{id}/refresh/": {
+            "post": {
+                "operationId": "v1_payments_refresh_create",
+                "description": "Poll Pagopar for the order's current status and apply it.\n\nPagopar validation circuit \"Paso 3\" (the merchant site queries an\norder's state) and the operator's manual fallback when a webhook\nwas missed. Reuses the same state machinery as webhooks, so a\nconfirmed payment stays final and confirmation extends the period\nexactly once.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "A unique integer value identifying this payment.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Payment"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Payment"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Payment"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Payment"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/payments/result/{gateway_order_id}": {
+            "get": {
+                "operationId": "v1_payments_result_retrieve",
+                "description": "`GET /api/v1/payments/result/<gateway_order_id>` — public, minimal.\n\nThe Pagopar checkout redirects the payer's browser here (via the\ndashboard's result page) with the order hash. Unauthenticated by\ndesign: the hash is an opaque, gateway-generated capability token,\nand the response exposes ONLY the payment status — no amounts, no\ncustomer data, nothing enumerable.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "gateway_order_id",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/subscriptions/": {
+            "get": {
+                "operationId": "v1_subscriptions_list",
+                "description": "`GET /subscriptions`, `/subscriptions/{id}`, `/subscriptions/{id}/entitlement`.\n\nScoped one hop from `ConsumingApp` via `customer__app` — `Subscription`\nhas no direct `app` FK (design §3). This is the second gating surface\nalongside `customers/{external_ref}/entitlement`, kept for callers that\nalready hold a subscription id rather than an external_ref.",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "description": "A page number within the paginated result set.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedSubscriptionList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/subscriptions/{id}/": {
+            "get": {
+                "operationId": "v1_subscriptions_retrieve",
+                "description": "`GET /subscriptions`, `/subscriptions/{id}`, `/subscriptions/{id}/entitlement`.\n\nScoped one hop from `ConsumingApp` via `customer__app` — `Subscription`\nhas no direct `app` FK (design §3). This is the second gating surface\nalongside `customers/{external_ref}/entitlement`, kept for callers that\nalready hold a subscription id rather than an external_ref.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "A unique integer value identifying this subscription.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Subscription"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/subscriptions/{id}/entitlement/": {
+            "get": {
+                "operationId": "v1_subscriptions_entitlement_retrieve",
+                "description": "`GET /subscriptions`, `/subscriptions/{id}`, `/subscriptions/{id}/entitlement`.\n\nScoped one hop from `ConsumingApp` via `customer__app` — `Subscription`\nhas no direct `app` FK (design §3). This is the second gating surface\nalongside `customers/{external_ref}/entitlement`, kept for callers that\nalready hold a subscription id rather than an external_ref.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "A unique integer value identifying this subscription.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Subscription"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/webhooks/pagopar": {
+            "post": {
+                "operationId": "v1_webhooks_pagopar_create",
+                "description": "`POST /api/v1/webhooks/pagopar` (spec: payment-processing, \"Webhook Idempotency\").\n\nUnauthenticated by API key — Pagopar does not hold one of our keys.\nAuthenticity instead rests entirely on `PaymentGateway.verify_webhook`'s\ngateway-signature check (see `adapters/pagopar/signature.py`'s loud\nUNCONFIRMED-algorithm warning, and its fail-closed behavior when\n`PAGOPAR_PRIVATE_KEY` is unset).\n\nDesign §5 layered security, items (3)-(5) implemented here:\npersist `WebhookEvent` BEFORE any state change (even for a payload that\nfails signature verification, for forensics), and rely on the\n`(gateway, event_id)` unique constraint as the idempotency gate — an\n`IntegrityError` means \"already processed\", answered with 200 and no\nside effects rather than an error (spec: \"Duplicate/replayed callback\").",
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Contract": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "customer": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "template": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "status": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ContractStatusEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "external_envelope_id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "signed_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "created_at",
+                    "customer",
+                    "external_envelope_id",
+                    "id",
+                    "signed_at",
+                    "status",
+                    "template",
+                    "updated_at"
+                ]
+            },
+            "ContractStatusEnum": {
+                "enum": [
+                    "draft",
+                    "generated",
+                    "sent",
+                    "signed",
+                    "declined",
+                    "voided",
+                    "terminated"
+                ],
+                "type": "string",
+                "description": "* `draft` - Draft\n* `generated` - Generated\n* `sent` - Sent\n* `signed` - Signed\n* `declined` - Declined\n* `voided` - Voided\n* `terminated` - Terminated"
+            },
+            "Customer": {
+                "type": "object",
+                "properties": {
+                    "external_ref": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "email": {
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "format": "email",
+                                "maxLength": 254
+                            },
+                            {
+                                "type": "string",
+                                "maxLength": 0
+                            }
+                        ]
+                    },
+                    "display_name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "contract": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "subscription": {
+                        "type": "string",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "contract",
+                    "created_at",
+                    "external_ref",
+                    "subscription"
+                ]
+            },
+            "PaginatedContractList": {
+                "type": "object",
+                "required": [
+                    "count",
+                    "results"
+                ],
+                "properties": {
+                    "count": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "next": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=4"
+                    },
+                    "previous": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=2"
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Contract"
+                        }
+                    }
+                }
+            },
+            "PaginatedCustomerList": {
+                "type": "object",
+                "required": [
+                    "count",
+                    "results"
+                ],
+                "properties": {
+                    "count": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "next": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=4"
+                    },
+                    "previous": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=2"
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Customer"
+                        }
+                    }
+                }
+            },
+            "PaginatedPaymentList": {
+                "type": "object",
+                "required": [
+                    "count",
+                    "results"
+                ],
+                "properties": {
+                    "count": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "next": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=4"
+                    },
+                    "previous": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=2"
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Payment"
+                        }
+                    }
+                }
+            },
+            "PaginatedSubscriptionList": {
+                "type": "object",
+                "required": [
+                    "count",
+                    "results"
+                ],
+                "properties": {
+                    "count": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "next": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=4"
+                    },
+                    "previous": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=2"
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Subscription"
+                        }
+                    }
+                }
+            },
+            "Payment": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "subscription": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "amount_pyg": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "status": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/PaymentStatusEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "gateway": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": "pagopar"
+                    },
+                    "gateway_order_id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "checkout_url": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "confirmed_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "amount_pyg",
+                    "checkout_url",
+                    "confirmed_at",
+                    "created_at",
+                    "gateway",
+                    "gateway_order_id",
+                    "id",
+                    "status",
+                    "subscription",
+                    "updated_at"
+                ]
+            },
+            "PaymentStatusEnum": {
+                "enum": [
+                    "pending",
+                    "confirmed",
+                    "failed",
+                    "expired"
+                ],
+                "type": "string",
+                "description": "* `pending` - Pending\n* `confirmed` - Confirmed\n* `failed` - Failed\n* `expired` - Expired"
+            },
+            "Subscription": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "customer": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "plan": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "status": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/SubscriptionStatusEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "trial_start": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "trial_end": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "current_period_end": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "canceled_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "canceled_at",
+                    "created_at",
+                    "current_period_end",
+                    "customer",
+                    "id",
+                    "plan",
+                    "status",
+                    "trial_end",
+                    "trial_start"
+                ]
+            },
+            "SubscriptionStatusEnum": {
+                "enum": [
+                    "trialing",
+                    "active",
+                    "past_due",
+                    "canceled"
+                ],
+                "type": "string",
+                "description": "* `trialing` - Trialing\n* `active` - Active\n* `past_due` - Past due\n* `canceled` - Canceled"
+            }
+        },
+        "securitySchemes": {
+            "ApiKeyAuth": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "Authorization",
+                "description": "Format: `Api-Key <prefix>.<secret>`"
+            },
+            "cookieAuth": {
+                "type": "apiKey",
+                "in": "cookie",
+                "name": "sessionid"
+            }
+        }
+    }
+}
