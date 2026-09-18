@@ -51,6 +51,10 @@ class MeView(APIView):
     authentication_classes = [SessionAuthentication]
     permission_classes = [permissions.AllowAny]
 
+    # The dashboard calls /me on every load; guaranteeing the CSRF cookie
+    # here means later unsafe requests always have a token to send, even
+    # for sessions established before a deploy rotated things.
+    @method_decorator(ensure_csrf_cookie)
     def get(self, request):
         user = request.user
         if not (user.is_authenticated and user.is_staff):
