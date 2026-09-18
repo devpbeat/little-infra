@@ -57,6 +57,23 @@ export function ContractTemplatesPage() {
       httpClient.get<{ markdown: string }>(`/contract-templates/${t.id}/preview/`),
     onSuccess: (r) => setPreview(r.markdown),
   });
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const templatize = useMutation({
+    mutationFn: () => {
+      const form = new FormData();
+      form.append("file", uploadFile!);
+      form.append("name", genForm.name);
+      form.append("deal_type", genForm.deal_type);
+      return httpClient.postForm<TemplateRow>("/contract-templates/templatize/", form);
+    },
+    onSuccess: (created) => {
+      invalidate();
+      setSelectedId(created.id);
+      setUploadFile(null);
+      setPreview(null);
+    },
+  });
+
   const generate = useMutation({
     mutationFn: () => httpClient.post<TemplateRow>("/contract-templates/generate/", genForm),
     onSuccess: (created) => {
@@ -110,6 +127,28 @@ export function ContractTemplatesPage() {
             {generate.isPending ? "Drafting… (~30s)" : "Generate draft"}
           </Button>
         </div>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 12 }}>
+          <div className="stat-card-label" style={{ margin: 0 }}>
+            Or templatize an EXISTING contract (.pdf / .md):
+          </div>
+          <input
+            type="file"
+            accept=".pdf,.md,.markdown,.txt"
+            onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
+          />
+          <Button
+            variant="secondary"
+            disabled={templatize.isPending || !uploadFile || !genForm.name}
+            onClick={() => templatize.mutate()}
+          >
+            {templatize.isPending ? "Templatizing… (~60s)" : "Upload & templatize"}
+          </Button>
+        </div>
+        {templatize.isError && (
+          <p style={{ color: "var(--danger, #f87171)", fontSize: 13 }}>
+            {templatize.error instanceof ApiError ? templatize.error.message : "Templatize failed."}
+          </p>
+        )}
         {generate.isError && (
           <p style={{ color: "var(--danger, #f87171)", fontSize: 13 }}>
             {generate.error instanceof ApiError ? generate.error.message : "Generation failed."}

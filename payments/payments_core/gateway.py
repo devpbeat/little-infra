@@ -16,3 +16,9 @@ from payments_core.ports.payment_gateway import PaymentGateway
 def get_payment_gateway() -> PaymentGateway:
     gateway_class = import_string(settings.PAYMENT_GATEWAY)
     return gateway_class()
+
+
+def get_contract_signer():
+    """Resolve the configured `ContractSigner` adapter (same pattern)."""
+    signer_class = import_string(settings.CONTRACT_SIGNER)
+    return signer_class()

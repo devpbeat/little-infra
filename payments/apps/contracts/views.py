@@ -9,6 +9,19 @@ from .models import Contract, ContractTemplate, InvalidContractTransition
 from .serializers import ContractSerializer, ContractTransitionSerializer
 
 
+def _markdown_to_html(markdown_text: str) -> str:
+    """Markdown → simple styled HTML for e-signature document rendering."""
+    import markdown as md
+
+    body = md.markdown(markdown_text, extensions=["tables"])
+    return (
+        "<html><head><meta charset='utf-8'><style>"
+        "body{font-family:Georgia,serif;font-size:12pt;line-height:1.5;margin:2cm;}"
+        "table{border-collapse:collapse;width:100%;}td,th{border:1px solid #999;padding:6px;}"
+        "</style></head><body>" + body + "</body></html>"
+    )
+
+
 def build_contract_context(contract: Contract) -> dict:
     """The explicit, closed set of variables a template may reference."""
     customer = contract.customer
@@ -52,6 +65,62 @@ class ContractViewSet(ScopedByAppMixin, viewsets.ReadOnlyModelViewSet):
             return Response({"detail": str(exc), "code": "invalid_transition"}, status=status.HTTP_409_CONFLICT)
 
         return Response(ContractSerializer(contract).data)
+
+    @action(detail=True, methods=["post"])
+    def send(self, request, pk=None):
+        """Render the contract and create the e-signature envelope.
+
+        Uses the configured ContractSigner (DocuSeal in production) with
+        the rendered document; transitions generated→sent and returns the
+        public signing link for the consuming app to surface to its
+        customer.
+        """
+        from payments_core.gateway import get_contract_signer
+        from payments_core.ports.contract_signer import EnvelopeRequest
+
+        contract = self.get_object()
+        template = contract.template
+        if not template.body or not template.is_approved:
+            return Response(
+                {"detail": "Template has no approved body to render."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        customer = contract.customer
+        if not customer.email:
+            return Response(
+                {"detail": "Customer has no email to send the signature request to."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        markdown_doc = template.render(build_contract_context(contract))
+        html = _markdown_to_html(markdown_doc)
+        signer = get_contract_signer()
+        result = signer.create_envelope(
+            EnvelopeRequest(
+                template_reference=template.reference or template.name,
+                signer_name=customer.display_name or customer.external_ref,
+                signer_email=customer.email,
+                document_name=f"{template.name} — {customer.display_name or customer.external_ref}",
+                document_html=html,
+            )
+        )
+        contract.external_envelope_id = result.envelope_id
+        try:
+            contract.transition_to("sent")
+        except InvalidContractTransition as exc:
+            return Response(
+                {"detail": str(exc), "code": "invalid_transition"},
+                status=status.HTTP_409_CONFLICT,
+            )
+        contract.save(update_fields=["external_envelope_id", "updated_at"])
+        return Response(
+            {
+                "contract_id": contract.pk,
+                "status": contract.status,
+                "envelope_id": result.envelope_id,
+                "signing_url": result.signing_url,
+            }
+        )
 
     @action(detail=True, methods=["get"])
     def document(self, request, pk=None):
@@ -133,6 +202,44 @@ class ContractTemplateViewSet(viewsets.ModelViewSet):
             )
         body = generate_template_body(
             deal_type=deal_type, name=name, instructions=instructions
+        )
+        template = ContractTemplate.objects.create(
+            name=name, deal_type=deal_type, body=body, is_approved=False
+        )
+        return Response(
+            ContractTemplateSerializer(template).data, status=status.HTTP_201_CREATED
+        )
+
+    @action(detail=False, methods=["post"])
+    def templatize(self, request):
+        """Upload an existing contract (PDF or markdown/text) and have
+        Claude convert it into a placeholder template — saved unapproved."""
+        import os
+
+        from adapters.anthropic_gen.generator import templatize_document
+
+        if not os.environ.get("ANTHROPIC_API_KEY"):
+            return Response(
+                {"detail": "ANTHROPIC_API_KEY is not configured on the server."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        upload = request.FILES.get("file")
+        name = str(request.data.get("name") or "").strip()
+        deal_type = str(request.data.get("deal_type") or "")
+        if not upload or not name or deal_type not in dict(
+            ContractTemplate._meta.get_field("deal_type").choices
+        ):
+            return Response(
+                {"detail": "file, name and a valid deal_type are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if upload.size > 10 * 1024 * 1024:
+            return Response(
+                {"detail": "File too large (10 MB max)."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        body = templatize_document(
+            file_bytes=upload.read(), filename=upload.name, deal_type=deal_type
         )
         template = ContractTemplate.objects.create(
             name=name, deal_type=deal_type, body=body, is_approved=False

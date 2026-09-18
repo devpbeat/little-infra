@@ -113,6 +113,61 @@ class TestContractDocument:
             == 409
         )
 
+    def test_send_creates_envelope_and_transitions(self, provisioned_app, monkeypatch):
+        from payments_core.ports.contract_signer import EnvelopeResult
+
+        _app, raw = provisioned_app
+        client = authed_client(raw)
+        client.post(
+            "/api/v1/customers/signup",
+            {"external_ref": "cust-sign", "display_name": "Ada", "email": "ada@example.com"},
+            format="json",
+        )
+        contract = Contract.objects.get(customer__external_ref="cust-sign")
+        ContractTemplate.objects.filter(pk=contract.template_id).update(
+            body="Contrato de {{client_name}}", is_approved=True
+        )
+
+        class StubSigner:
+            def create_envelope(self, request):
+                assert "Ada" in request.document_html
+                return EnvelopeResult(
+                    envelope_id="sub-9", raw={}, signing_url="https://sign.test/s/abc"
+                )
+
+        monkeypatch.setattr(
+            "payments_core.gateway.get_contract_signer", lambda: StubSigner()
+        )
+
+        response = client.post(f"/api/v1/contracts/{contract.pk}/send/")
+
+        assert response.status_code == 200
+        assert response.data["signing_url"] == "https://sign.test/s/abc"
+        contract.refresh_from_db()
+        assert contract.status == "sent"
+        assert contract.external_envelope_id == "sub-9"
+
+    def test_templatize_uploads_markdown(self, staff_client, monkeypatch):
+        import io
+
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+        monkeypatch.setattr(
+            "adapters.anthropic_gen.generator.templatize_document",
+            lambda **kw: "# Contrato\n{{client_name}} firma este documento.",
+        )
+        upload = io.BytesIO(b"# Original\nACME SA firma este documento.")
+        upload.name = "old-contract.md"
+
+        response = staff_client.post(
+            "/api/v1/contract-templates/templatize/",
+            {"file": upload, "name": "Imported SaaS", "deal_type": "saas_subscription"},
+            format="multipart",
+        )
+
+        assert response.status_code == 201
+        assert response.data["is_approved"] is False
+        assert "{{client_name}}" in response.data["body"]
+
     def test_cross_tenant_document_denied(self, provisioned_app, other_provisioned_app):
         _app_a, key_a = provisioned_app
         _app_b, key_b = other_provisioned_app

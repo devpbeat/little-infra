@@ -9,12 +9,20 @@ class EnvelopeRequest:
     template_reference: str
     signer_name: str
     signer_email: str
+    # Rendered contract document for providers that build the envelope
+    # from content (e.g. DocuSeal HTML submissions) rather than a
+    # provider-side template id.
+    document_name: str = ""
+    document_html: str = ""
 
 
 @dataclass(frozen=True, slots=True)
 class EnvelopeResult:
     envelope_id: str
     raw: dict
+    # Public link the signer opens to sign; empty when the provider only
+    # sends by email or has no public-link concept.
+    signing_url: str = ""
 
 
 class EnvelopeStatus:

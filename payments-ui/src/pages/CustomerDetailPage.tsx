@@ -7,7 +7,7 @@ import { formatDate } from "../lib/format";
 import { CustomerTimeline } from "../features/customers/CustomerTimeline";
 import type { TimelineEvent } from "../features/customers/CustomerTimeline";
 import type { ContractAppReportedStatus } from "../api/types";
-import { ApiError } from "../api/httpClient";
+import { ApiError, httpClient } from "../api/httpClient";
 
 /** Forward moves a consuming app may report itself (design: contract-tracking). */
 const NEXT_TRANSITION: Partial<Record<string, ContractAppReportedStatus>> = {
@@ -30,6 +30,16 @@ export function CustomerDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["customer", customerId] });
       queryClient.invalidateQueries({ queryKey: ["customers"] });
+    },
+  });
+
+  const sendForSignature = useMutation({
+    mutationFn: () =>
+      httpClient.post<{ signing_url: string }>(
+        `/contracts/${customerQuery.data!.contract!.id}/send/`
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["customer", customerId] });
     },
   });
 
@@ -83,7 +93,30 @@ export function CustomerDetailPage() {
                 {transition.isPending ? "Updating…" : `Mark ${nextStatus}`}
               </Button>
             )}
+            {contract && contract.status === "generated" && (
+              <Button
+                disabled={sendForSignature.isPending}
+                onClick={() => sendForSignature.mutate()}
+              >
+                {sendForSignature.isPending ? "Sending…" : "Send for signature"}
+              </Button>
+            )}
           </div>
+          {sendForSignature.data?.signing_url && (
+            <p style={{ marginTop: 8, fontSize: 13 }}>
+              Signing link:{" "}
+              <a href={sendForSignature.data.signing_url} target="_blank" rel="noreferrer">
+                {sendForSignature.data.signing_url}
+              </a>
+            </p>
+          )}
+          {sendForSignature.isError && (
+            <p className="state-message error" style={{ marginTop: 8 }}>
+              {sendForSignature.error instanceof ApiError
+                ? sendForSignature.error.message
+                : "Sending for signature failed."}
+            </p>
+          )}
           {transition.isError && (
             <p className="state-message error" style={{ marginTop: 8 }}>
               {transition.error instanceof ApiError ? transition.error.message : "Transition failed."}
