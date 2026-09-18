@@ -80,3 +80,56 @@ def generate_template_body(*, deal_type: str, name: str, instructions: str = "")
         response = stream.get_final_message()
 
     return "".join(block.text for block in response.content if block.type == "text").strip()
+
+
+def templatize_document(*, file_bytes: bytes, filename: str, deal_type: str) -> str:
+    """Convert an uploaded contract (PDF or markdown/text) into a template.
+
+    Claude rewrites the document as clean markdown and replaces the
+    variable data (client names, fees, dates, ...) with the closed
+    placeholder set, preserving the legal text otherwise.
+    """
+    import base64
+
+    client = Anthropic()
+    model = os.environ.get("ANTHROPIC_MODEL", "claude-opus-5")
+
+    system = (
+        "You convert an existing contract document into a reusable template. "
+        "Rewrite it as clean markdown, PRESERVING the legal text as written. "
+        "Replace concrete variable data (client/party names, emails, fees, "
+        "plan names, trial periods, dates) with double-curly placeholders "
+        "chosen ONLY from this exact set: "
+        + ", ".join("{{" + p + "}}" for p in AVAILABLE_PLACEHOLDERS)
+        + ". Data that has no matching placeholder (company registration "
+        "numbers, addresses) stays as [___] blanks. Output ONLY the "
+        "markdown template — no commentary."
+    )
+
+    if filename.lower().endswith(".pdf"):
+        content = [
+            {
+                "type": "document",
+                "source": {
+                    "type": "base64",
+                    "media_type": "application/pdf",
+                    "data": base64.b64encode(file_bytes).decode(),
+                },
+            },
+            {"type": "text", "text": f"Templatize this contract (deal type: {deal_type})."},
+        ]
+    else:
+        content = (
+            f"Templatize this contract (deal type: {deal_type}):\n\n"
+            + file_bytes.decode("utf-8", errors="replace")
+        )
+
+    with client.messages.stream(
+        model=model,
+        max_tokens=32000,
+        system=system,
+        messages=[{"role": "user", "content": content}],
+    ) as stream:
+        response = stream.get_final_message()
+
+    return "".join(block.text for block in response.content if block.type == "text").strip()

@@ -58,8 +58,39 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (text ? JSON.parse(text) : undefined) as T;
 }
 
+async function requestForm<T>(path: string, form: FormData): Promise<T> {
+  // Multipart: let the browser set the Content-Type boundary itself.
+  const apiKey = getStoredApiKey();
+  const headers: Record<string, string> = {};
+  if (apiKey) headers.Authorization = `Api-Key ${apiKey}`;
+  const csrf = getCookie("csrftoken");
+  if (csrf) headers["X-CSRFToken"] = csrf;
+
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    headers,
+    credentials: "include",
+    body: form,
+  });
+  if (!res.ok) {
+    let body: unknown;
+    try {
+      body = await res.json();
+    } catch {
+      body = undefined;
+    }
+    const detail =
+      body && typeof body === "object" && "detail" in body
+        ? String((body as { detail: unknown }).detail)
+        : undefined;
+    throw new ApiError(res.status, detail ?? `Request to ${path} failed with ${res.status}`, body);
+  }
+  return (await res.json()) as T;
+}
+
 export const httpClient = {
   get: <T>(path: string) => request<T>(path),
+  postForm: <T>(path: string, form: FormData) => requestForm<T>(path, form),
   post: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: "POST", body: body ? JSON.stringify(body) : undefined }),
   patch: <T>(path: string, body?: unknown) =>
