@@ -38,6 +38,26 @@ class ConsumingAppViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ConsumingAppSerializer
     queryset = ConsumingApp.objects.prefetch_related("api_keys").order_by("name")
 
+    @action(detail=True, methods=["post"], url_path="customers")
+    def create_customer(self, request, pk=None):
+        """Staff creates a customer UNDER an explicit app — the admin
+        counterpart of the machine signup endpoint, sharing the same
+        provisioning (contract from the app's template + trial)."""
+        from apps.customers.serializers import CustomerSerializer, SignupSerializer
+        from apps.customers.views import provision_customer
+
+        app = self.get_object()
+        serializer = SignupSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            customer, created = provision_customer(app, serializer.validated_data)
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_409_CONFLICT)
+        return Response(
+            CustomerSerializer(customer).data,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
     @action(detail=True, methods=["post"], url_path="issue-key")
     def issue_key(self, request, pk=None):
         app = self.get_object()

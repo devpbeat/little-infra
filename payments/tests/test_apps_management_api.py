@@ -53,6 +53,29 @@ class TestAppManagement:
         assert key.is_active is False and key.revoked_at is not None
         assert authed_client(raw).get("/api/v1/customers/").status_code in (401, 403)
 
+    def test_staff_creates_customer_under_app(self, staff_client, provisioned_app):
+        from apps.contracts.models import Contract
+        from apps.subscriptions.models import Subscription
+
+        app, _raw = provisioned_app
+
+        response = staff_client.post(
+            f"/api/v1/apps/{app.id}/customers/",
+            {"external_ref": "staff-cust-1", "display_name": "Grace Hopper"},
+            format="json",
+        )
+
+        assert response.status_code == 201
+        assert Contract.objects.filter(customer__external_ref="staff-cust-1").exists()
+        assert Subscription.objects.filter(customer__external_ref="staff-cust-1").exists()
+        # Idempotent retry returns the same customer with 200.
+        retry = staff_client.post(
+            f"/api/v1/apps/{app.id}/customers/",
+            {"external_ref": "staff-cust-1"},
+            format="json",
+        )
+        assert retry.status_code == 200
+
     def test_api_key_cannot_use_management_endpoints(self, provisioned_app):
         app, raw = provisioned_app
         client = authed_client(raw)
