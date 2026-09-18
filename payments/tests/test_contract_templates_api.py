@@ -37,6 +37,37 @@ class TestTemplateCrud:
         assert "ACME S.A." in preview.data["markdown"]
         assert "{{" not in preview.data["markdown"]
 
+    def test_generate_creates_unapproved_draft(self, staff_client, monkeypatch):
+        from apps.contracts import views
+
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+        monkeypatch.setattr(
+            "adapters.anthropic_gen.generator.generate_template_body",
+            lambda **kw: f"# Contrato\nCliente: {{{{client_name}}}} ({kw['deal_type']})",
+        )
+        # The view imports lazily from the module path above; also patch a
+        # direct reference if one exists.
+        assert views  # imported for monkeypatch scoping clarity
+
+        response = staff_client.post(
+            "/api/v1/contract-templates/generate/",
+            {"name": "AI SaaS draft", "deal_type": "saas_subscription"},
+            format="json",
+        )
+
+        assert response.status_code == 201
+        assert response.data["is_approved"] is False
+        assert "{{client_name}}" in response.data["body"]
+
+    def test_generate_without_api_key_is_503(self, staff_client, monkeypatch):
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        response = staff_client.post(
+            "/api/v1/contract-templates/generate/",
+            {"name": "x", "deal_type": "saas_subscription"},
+            format="json",
+        )
+        assert response.status_code == 503
+
     def test_api_key_cannot_touch_templates(self, provisioned_app):
         _app, raw = provisioned_app
         client = authed_client(raw)

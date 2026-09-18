@@ -107,6 +107,40 @@ class ContractTemplateViewSet(viewsets.ModelViewSet):
     serializer_class = ContractTemplateSerializer
     queryset = ContractTemplate.objects.order_by("name")
 
+    @action(detail=False, methods=["post"])
+    def generate(self, request):
+        """AI-draft a template body with Claude (staff-triggered, reviewed).
+
+        The draft is saved with `is_approved=False` — it renders nothing
+        for real customers until a human approves it in the editor.
+        """
+        import os
+
+        from adapters.anthropic_gen.generator import generate_template_body
+
+        if not os.environ.get("ANTHROPIC_API_KEY"):
+            return Response(
+                {"detail": "ANTHROPIC_API_KEY is not configured on the server."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        name = str(request.data.get("name") or "").strip()
+        deal_type = str(request.data.get("deal_type") or "")
+        instructions = str(request.data.get("instructions") or "")
+        if not name or deal_type not in dict(ContractTemplate._meta.get_field("deal_type").choices):
+            return Response(
+                {"detail": "name and a valid deal_type are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        body = generate_template_body(
+            deal_type=deal_type, name=name, instructions=instructions
+        )
+        template = ContractTemplate.objects.create(
+            name=name, deal_type=deal_type, body=body, is_approved=False
+        )
+        return Response(
+            ContractTemplateSerializer(template).data, status=status.HTTP_201_CREATED
+        )
+
     @action(detail=True, methods=["get"])
     def preview(self, request, pk=None):
         """Render the template with SAMPLE data so the editor can preview."""
