@@ -67,7 +67,7 @@ class CustomerViewSet(ScopedByAppMixin, viewsets.ReadOnlyModelViewSet):
 
     serializer_class = CustomerSerializer
     lookup_field = "external_ref"
-    queryset = Customer.objects.all()
+    queryset = Customer.objects.order_by("-created_at")
 
     @action(detail=True, methods=["get"])
     def entitlement(self, request, external_ref=None):
