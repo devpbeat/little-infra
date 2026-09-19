@@ -9,6 +9,7 @@ import { ContractTemplatesPage } from "./pages/ContractTemplatesPage";
 import { PaymentDetailPage } from "./pages/PaymentDetailPage";
 import { PaymentResultPage } from "./pages/PaymentResultPage";
 import { LoginPage } from "./pages/LoginPage";
+import { ContractSignPage } from "./pages/ContractSignPage";
 import { RequireAuth } from "./auth/RequireAuth";
 import "./styles/dashboard.css";
 
@@ -17,6 +18,8 @@ function App() {
     <Routes>
       {/* Public: Pagopar redirects the payer here after checkout. */}
       <Route path="/payments/result/:hash" element={<PaymentResultPage />} />
+      {/* Public: click-to-sign ceremony, addressed by capability token. */}
+      <Route path="/contracts/sign/:token" element={<ContractSignPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route
         path="*"
