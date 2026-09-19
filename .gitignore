@@ -1,2 +1,8 @@
 **/.env
 .env
+
+# Ephemeral Claude Code worktrees
+.claude/
+
+# Gentle AI tooling cache
+.atl/
