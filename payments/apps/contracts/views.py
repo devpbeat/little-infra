@@ -126,12 +126,40 @@ class ContractViewSet(ScopedByAppMixin, viewsets.ReadOnlyModelViewSet):
                 status=status.HTTP_409_CONFLICT,
             )
         contract.save(update_fields=["external_envelope_id", "signed_document", "updated_at"])
+
+        # Best-effort email with the signing link when outbound email is
+        # configured (console backend otherwise). The link in the response
+        # is the primary channel; a mail failure must never fail the send.
+        email_sent = False
+        if result.signing_url and customer.email:
+            try:
+                from django.conf import settings as django_settings
+                from django.core.mail import send_mail
+
+                send_mail(
+                    subject=f"Contract for signature — {template.name}",
+                    message=(
+                        f"Hello {customer.display_name or ''},\n\n"
+                        f"Please review and sign your contract at:\n{result.signing_url}\n"
+                    ),
+                    from_email=django_settings.DEFAULT_FROM_EMAIL or None,
+                    recipient_list=[customer.email],
+                    fail_silently=False,
+                )
+                email_sent = (
+                    django_settings.EMAIL_BACKEND
+                    == "django.core.mail.backends.smtp.EmailBackend"
+                )
+            except Exception:
+                email_sent = False
+
         return Response(
             {
                 "contract_id": contract.pk,
                 "status": contract.status,
                 "envelope_id": result.envelope_id,
                 "signing_url": result.signing_url,
+                "email_sent": email_sent,
             }
         )
 
