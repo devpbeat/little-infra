@@ -168,6 +168,89 @@ class TestContractDocument:
         assert response.data["is_approved"] is False
         assert "{{client_name}}" in response.data["body"]
 
+    def test_builtin_click_sign_full_ceremony(self, provisioned_app, settings):
+        settings.CONTRACT_SIGNER = "adapters.builtin_sign.signer.BuiltinClickSigner"
+        _app, raw = provisioned_app
+        client = authed_client(raw)
+        client.post(
+            "/api/v1/customers/signup",
+            {"external_ref": "cust-click", "display_name": "Ada", "email": "ada@example.com"},
+            format="json",
+        )
+        contract = Contract.objects.get(customer__external_ref="cust-click")
+        ContractTemplate.objects.filter(pk=contract.template_id).update(
+            body="Contrato de {{client_name}}", is_approved=True
+        )
+
+        sent = client.post(f"/api/v1/contracts/{contract.pk}/send/")
+        assert sent.status_code == 200
+        token = sent.data["envelope_id"]
+        assert token in sent.data["signing_url"]
+
+        from rest_framework.test import APIClient
+
+        anon = APIClient()
+        # Public read shows the FROZEN document.
+        doc = anon.get(f"/api/v1/public/contract-signing/{token}/")
+        assert doc.status_code == 200
+        assert doc.data["markdown"] == "Contrato de Ada"
+
+        # Template edits after send must not change what is signed.
+        ContractTemplate.objects.filter(pk=contract.template_id).update(body="OTRO TEXTO")
+        assert (
+            anon.get(f"/api/v1/public/contract-signing/{token}/").data["markdown"]
+            == "Contrato de Ada"
+        )
+
+        signed = anon.post(
+            f"/api/v1/public/contract-signing/{token}/sign/",
+            {"signer_name": "Ada Lovelace", "signer_document_id": "1234567", "accepted": True},
+            format="json",
+        )
+        assert signed.status_code == 200
+        contract.refresh_from_db()
+        assert contract.status == "signed"
+        assert contract.signed_at is not None
+        assert contract.signer_document_id == "1234567"
+        assert contract.signed_document == "Contrato de Ada"
+
+        # Replay is a friendly no-op; missing acceptance is rejected.
+        assert (
+            anon.post(
+                f"/api/v1/public/contract-signing/{token}/sign/",
+                {"signer_name": "x", "signer_document_id": "1", "accepted": True},
+                format="json",
+            ).data["detail"]
+            == "Already signed."
+        )
+        assert anon.get("/api/v1/public/contract-signing/wrong-token/").status_code == 404
+
+    def test_sign_requires_acceptance_fields(self, provisioned_app, settings):
+        settings.CONTRACT_SIGNER = "adapters.builtin_sign.signer.BuiltinClickSigner"
+        _app, raw = provisioned_app
+        client = authed_client(raw)
+        client.post(
+            "/api/v1/customers/signup",
+            {"external_ref": "cust-click2", "email": "ada2@example.com"},
+            format="json",
+        )
+        contract = Contract.objects.get(customer__external_ref="cust-click2")
+        ContractTemplate.objects.filter(pk=contract.template_id).update(
+            body="Doc {{client_name}}", is_approved=True
+        )
+        token = client.post(f"/api/v1/contracts/{contract.pk}/send/").data["envelope_id"]
+
+        from rest_framework.test import APIClient
+
+        response = APIClient().post(
+            f"/api/v1/public/contract-signing/{token}/sign/",
+            {"signer_name": "Ada", "accepted": False},
+            format="json",
+        )
+        assert response.status_code == 400
+        contract.refresh_from_db()
+        assert contract.status == "sent"
+
     def test_cross_tenant_document_denied(self, provisioned_app, other_provisioned_app):
         _app_a, key_a = provisioned_app
         _app_b, key_b = other_provisioned_app

@@ -92,6 +92,14 @@ class Contract(models.Model):
         max_length=20, choices=ContractStatus.choices, default=ContractStatus.DRAFT
     )
     external_envelope_id = models.CharField(max_length=255, blank=True)
+    # Built-in click-to-sign acceptance record (adapters/builtin_sign):
+    # the document text is SNAPSHOTTED at signing time — what was accepted
+    # can never drift with later template edits — together with who
+    # accepted it and from where.
+    signed_document = models.TextField(blank=True)
+    signer_name = models.CharField(max_length=255, blank=True)
+    signer_document_id = models.CharField(max_length=32, blank=True, help_text="Signer's CI/RUC.")
+    signed_ip = models.CharField(max_length=64, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     signed_at = models.DateTimeField(null=True, blank=True)

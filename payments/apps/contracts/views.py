@@ -115,6 +115,9 @@ class ContractViewSet(ScopedByAppMixin, viewsets.ReadOnlyModelViewSet):
                 status=status.HTTP_502_BAD_GATEWAY,
             )
         contract.external_envelope_id = result.envelope_id
+        # Freeze the exact text sent for signature: later template edits
+        # must never change what the signer saw and accepted.
+        contract.signed_document = markdown_doc
         try:
             contract.transition_to("sent")
         except InvalidContractTransition as exc:
@@ -122,7 +125,7 @@ class ContractViewSet(ScopedByAppMixin, viewsets.ReadOnlyModelViewSet):
                 {"detail": str(exc), "code": "invalid_transition"},
                 status=status.HTTP_409_CONFLICT,
             )
-        contract.save(update_fields=["external_envelope_id", "updated_at"])
+        contract.save(update_fields=["external_envelope_id", "signed_document", "updated_at"])
         return Response(
             {
                 "contract_id": contract.pk,
@@ -156,6 +159,73 @@ class ContractViewSet(ScopedByAppMixin, viewsets.ReadOnlyModelViewSet):
                 "markdown": template.render(build_contract_context(contract)),
             }
         )
+
+
+class PublicContractSigningView(viewsets.ViewSet):
+    """Public signing ceremony endpoints, addressed by the unguessable
+    envelope token (capability URL — knowing it IS the authorization).
+
+    Exposes only what the signer needs: the frozen document text and the
+    acceptance action. No amounts beyond what the contract text itself
+    states, no ids, no cross-record access.
+    """
+
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+    lookup_value_regex = "[-A-Za-z0-9_]+"
+
+    def _get_contract(self, token: str):
+        return (
+            Contract.objects.select_related("customer", "template")
+            .filter(external_envelope_id=token)
+            .exclude(external_envelope_id="")
+            .first()
+        )
+
+    def retrieve(self, request, pk=None):
+        contract = self._get_contract(pk)
+        if contract is None:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {
+                "status": contract.status,
+                "template": contract.template.name,
+                "client_name": contract.customer.display_name or "",
+                "markdown": contract.signed_document,
+                "signed_at": contract.signed_at,
+            }
+        )
+
+    @action(detail=True, methods=["post"])
+    def sign(self, request, pk=None):
+        contract = self._get_contract(pk)
+        if contract is None:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        if contract.status == "signed":
+            return Response({"detail": "Already signed.", "status": contract.status})
+        signer_name = str(request.data.get("signer_name") or "").strip()
+        signer_document_id = str(request.data.get("signer_document_id") or "").strip()
+        accepted = bool(request.data.get("accepted"))
+        if not signer_name or not signer_document_id or not accepted:
+            return Response(
+                {"detail": "signer_name, signer_document_id and accepted are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        forwarded = str(request.META.get("HTTP_X_FORWARDED_FOR") or "")
+        contract.signer_name = signer_name
+        contract.signer_document_id = signer_document_id
+        contract.signed_ip = (
+            forwarded.split(",")[0].strip() or request.META.get("REMOTE_ADDR", "")
+        )
+        try:
+            contract.transition_to("signed")
+        except InvalidContractTransition as exc:
+            return Response(
+                {"detail": str(exc), "code": "invalid_transition"},
+                status=status.HTTP_409_CONFLICT,
+            )
+        contract.save(update_fields=["signer_name", "signer_document_id", "signed_ip", "updated_at"])
+        return Response({"status": contract.status, "signed_at": contract.signed_at})
 
 
 class ContractTemplateSerializer(serializers.ModelSerializer):
