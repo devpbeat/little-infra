@@ -35,7 +35,7 @@ export function CustomerDetailPage() {
 
   const sendForSignature = useMutation({
     mutationFn: () =>
-      httpClient.post<{ signing_url: string }>(
+      httpClient.post<{ signing_url: string; email_sent: boolean }>(
         `/contracts/${customerQuery.data!.contract!.id}/send/`
       ),
     onSuccess: () => {
@@ -107,7 +107,18 @@ export function CustomerDetailPage() {
               Signing link:{" "}
               <a href={sendForSignature.data.signing_url} target="_blank" rel="noreferrer">
                 {sendForSignature.data.signing_url}
-              </a>
+              </a>{" "}
+              <button
+                type="button"
+                onClick={() => navigator.clipboard.writeText(sendForSignature.data.signing_url)}
+              >
+                Copy
+              </button>
+              <span style={{ color: "var(--text-dim)", marginLeft: 8 }}>
+                {sendForSignature.data.email_sent
+                  ? "· emailed to the customer"
+                  : "· share it with the customer (email not configured)"}
+              </span>
             </p>
           )}
           {sendForSignature.isError && (
