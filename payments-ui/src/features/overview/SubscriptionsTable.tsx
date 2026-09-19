@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Badge, Button, Card, Table } from "../../components/ui";
 import { formatDate } from "../../lib/format";
 import { paymentsApi } from "../../api/client";
+import { ApiError } from "../../api/httpClient";
 import type { Subscription } from "../../api/types";
 
 export function SubscriptionsTable({ subscriptions }: { subscriptions: Subscription[] }) {
@@ -53,7 +54,9 @@ export function SubscriptionsTable({ subscriptions }: { subscriptions: Subscript
           {initiate.isError && (
             <tr>
               <td colSpan={6} className="state-message">
-                Payment initiation failed. Check the API key and try again.
+                {initiate.error instanceof ApiError
+                  ? `Payment initiation failed: ${initiate.error.message}`
+                  : "Payment initiation failed."}
               </td>
             </tr>
           )}

@@ -1,4 +1,5 @@
 import json
+import logging
 
 from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
@@ -16,6 +17,8 @@ from payments_core.ports.payment_gateway import ChargeRequest
 from .models import Payment, PaymentStatus, WebhookEvent
 from .serializers import PaymentInitiationSerializer, PaymentSerializer
 from .services import process_webhook_status
+
+logger = logging.getLogger(__name__)
 
 
 class PaymentResultView(APIView):
@@ -85,7 +88,6 @@ class PaymentInitiationView(APIView):
             gateway="pagopar",
         )
 
-        gateway = get_payment_gateway()
         charge_request = ChargeRequest(
             order_id=str(payment.pk),
             amount_pyg=payment.amount_pyg,
@@ -98,11 +100,19 @@ class PaymentInitiationView(APIView):
             buyer_phone=customer.phone or "000000000",
         )
         try:
+            gateway = get_payment_gateway()
             result = gateway.create_charge(charge_request)
-        except Exception:
-            payment.status = "failed"
+        except Exception as exc:
+            # Surface the real misconfig/provider error instead of a bare 500
+            # (mirrors the contract `send` action's 502 pattern). The UI
+            # shows `detail`; the log keeps a full traceback for ops.
+            logger.exception("Payment initiation failed for payment %s", payment.pk)
+            payment.status = PaymentStatus.FAILED
             payment.save(update_fields=["status", "updated_at"])
-            raise
+            return Response(
+                {"detail": f"Payment gateway error: {exc}"},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
 
         payment.gateway_order_id = result.gateway_order_id
         payment.checkout_url = result.checkout_url or ""

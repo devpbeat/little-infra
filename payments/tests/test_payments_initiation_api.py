@@ -133,6 +133,29 @@ class TestPaymentInitiation:
         )
         assert response.status_code == 401
 
+    def test_gateway_failure_surfaces_reason_and_marks_failed(
+        self, provisioned_app, subscription, monkeypatch
+    ):
+        """A gateway/misconfig error is a 502 with the real reason, not a bare 500."""
+        from apps.billing import views
+
+        class BoomGateway:
+            def create_charge(self, request):
+                raise RuntimeError("boom")
+
+        _app, raw_key = provisioned_app
+        monkeypatch.setattr(views, "get_payment_gateway", lambda: BoomGateway())
+
+        client = authed_client(raw_key)
+        response = client.post(
+            "/api/v1/payments", {"subscription": subscription.pk}, format="json"
+        )
+
+        assert response.status_code == 502
+        assert "boom" in response.data["detail"]
+        payment = Payment.objects.filter(subscription=subscription).first()
+        assert payment.status == PaymentStatus.FAILED
+
 
 class TestPaymentListing:
     def test_list_scoped_to_app(self, provisioned_app, subscription):
