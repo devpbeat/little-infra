@@ -5,13 +5,24 @@
  * `VITE_USE_MOCK_API`:
  *   - "true"  -> always mock adapter
  *   - "false" -> always real HTTP client
- *   - unset (default) -> real API once an API key is stored, mock otherwise,
- *     so the dashboard works standalone until someone pastes a key in
- *     Settings.
+ *   - unset (default) -> real API once authenticated (an API key is stored OR
+ *     a staff session is established), mock otherwise, so the dashboard works
+ *     standalone until someone logs in or pastes a key in Settings.
  */
 const FORCED_MODE = import.meta.env.VITE_USE_MOCK_API;
 
 const API_KEY_STORAGE_KEY = "payments-ui.api-key";
+
+/**
+ * Whether a staff session is active. `isUsingMockApi` is synchronous, but the
+ * session check (`GET /auth/me`) is async, so `RequireAuth` records the outcome
+ * here before the data queries fire. Reset on failed/absent session.
+ */
+let sessionAuthenticated = false;
+
+export function setSessionAuthenticated(value: boolean): void {
+  sessionAuthenticated = value;
+}
 
 export function getStoredApiKey(): string | null {
   try {
@@ -36,7 +47,7 @@ export function setStoredApiKey(value: string | null): void {
 export function isUsingMockApi(): boolean {
   if (FORCED_MODE === "true") return true;
   if (FORCED_MODE === "false") return false;
-  return !getStoredApiKey();
+  return !getStoredApiKey() && !sessionAuthenticated;
 }
 
 /** Same-origin by default — the Vite dev server proxies `/api` to the payments backend. */
