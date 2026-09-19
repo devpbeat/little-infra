@@ -99,15 +99,21 @@ class ContractViewSet(ScopedByAppMixin, viewsets.ReadOnlyModelViewSet):
         markdown_doc = template.render(build_contract_context(contract))
         html = _markdown_to_html(markdown_doc)
         signer = get_contract_signer()
-        result = signer.create_envelope(
-            EnvelopeRequest(
-                template_reference=template.reference or template.name,
-                signer_name=customer.display_name or customer.external_ref,
-                signer_email=customer.email,
-                document_name=f"{template.name} — {customer.display_name or customer.external_ref}",
-                document_html=html,
+        try:
+            result = signer.create_envelope(
+                EnvelopeRequest(
+                    template_reference=template.reference or template.name,
+                    signer_name=customer.display_name or customer.external_ref,
+                    signer_email=customer.email,
+                    document_name=f"{template.name} — {customer.display_name or customer.external_ref}",
+                    document_html=html,
+                )
             )
-        )
+        except Exception as exc:  # surface provider misconfig/errors, not a bare 500
+            return Response(
+                {"detail": f"E-signature provider error: {exc}"},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
         contract.external_envelope_id = result.envelope_id
         try:
             contract.transition_to("sent")

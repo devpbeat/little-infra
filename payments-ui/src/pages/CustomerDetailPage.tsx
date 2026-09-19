@@ -82,7 +82,7 @@ export function CustomerDetailPage() {
       <div className="stat-row">
         <Card>
           <div className="stat-card-label">Contract</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
             {contract ? <Badge tone={contract.status} /> : "—"}
             {contract && nextStatus && (
               <Button
