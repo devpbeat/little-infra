@@ -6,3 +6,4 @@ export { FlameLogo } from "./FlameLogo";
 export { ProgressBar } from "./ProgressBar";
 export { TabBar } from "./TabBar";
 export type { TabBarItem } from "./TabBar";
+export { Toggle } from "./Toggle";

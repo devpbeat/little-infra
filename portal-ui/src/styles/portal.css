@@ -739,3 +739,98 @@
   color: var(--text-dim);
   font-size: 14px;
 }
+
+/* Admin: manage products */
+
+.admin-header {
+  padding: 24px 0 8px;
+}
+
+.admin-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-products-section {
+  padding: 16px 0 48px;
+}
+
+.admin-title {
+  margin: 8px 0 4px;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.admin-subtitle {
+  margin: 0 0 20px;
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+.admin-search-row {
+  display: flex;
+  gap: 10px;
+  margin: 16px 0 20px;
+}
+
+.admin-search-input {
+  flex: 1;
+}
+
+.admin-filter-button {
+  border: 1.5px solid var(--border);
+}
+
+.admin-product-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.admin-product-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.admin-product-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.admin-product-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-product-info .product-name {
+  margin: 0;
+}
+
+.admin-product-meta {
+  display: flex;
+  gap: 20px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.admin-meta-label {
+  font-weight: 700;
+  font-size: 11px;
+  margin-right: 4px;
+}
+
+.admin-meta-yes {
+  color: var(--success);
+  font-weight: 700;
+}
+
+.admin-meta-no {
+  color: #d9483a;
+  font-weight: 700;
+}
