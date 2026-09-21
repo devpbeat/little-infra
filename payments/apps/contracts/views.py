@@ -5,7 +5,8 @@ from rest_framework.response import Response
 
 from payments_core.auth import ScopedByAppMixin
 
-from .models import Contract, ContractTemplate, InvalidContractTransition
+from .jobs import start_generation_job
+from .models import Contract, ContractTemplate, GenerationJob, InvalidContractTransition
 from .serializers import ContractSerializer, ContractTransitionSerializer
 
 
@@ -272,6 +273,14 @@ class ContractTemplateSerializer(serializers.ModelSerializer):
         ]
 
 
+class GenerationJobSerializer(serializers.ModelSerializer):
+    result_template = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = GenerationJob
+        fields = ["id", "kind", "status", "name", "result_template", "error", "created_at"]
+
+
 class ContractTemplateViewSet(viewsets.ModelViewSet):
     """Full CRUD over contract templates — staff sessions only.
 
@@ -308,15 +317,15 @@ class ContractTemplateViewSet(viewsets.ModelViewSet):
                 {"detail": "name and a valid deal_type are required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        body = generate_template_body(
-            deal_type=deal_type, name=name, instructions=instructions
+        job = start_generation_job(
+            kind=GenerationJob.Kind.GENERATE,
+            name=name,
+            deal_type=deal_type,
+            build_body=lambda: generate_template_body(
+                deal_type=deal_type, name=name, instructions=instructions
+            ),
         )
-        template = ContractTemplate.objects.create(
-            name=name, deal_type=deal_type, body=body, is_approved=False
-        )
-        return Response(
-            ContractTemplateSerializer(template).data, status=status.HTTP_201_CREATED
-        )
+        return Response(GenerationJobSerializer(job).data, status=status.HTTP_202_ACCEPTED)
 
     @action(detail=False, methods=["post"])
     def templatize(self, request):
@@ -346,18 +355,32 @@ class ContractTemplateViewSet(viewsets.ModelViewSet):
                 {"detail": "File too large (10 MB max)."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        body = templatize_document(
-            file_bytes=upload.read(),
-            filename=upload.name,
+        # Read the upload NOW — the file object closes when the response is
+        # sent, before the background thread runs.
+        file_bytes = upload.read()
+        filename = upload.name
+        instructions = str(request.data.get("instructions") or "")
+        job = start_generation_job(
+            kind=GenerationJob.Kind.TEMPLATIZE,
+            name=name,
             deal_type=deal_type,
-            instructions=str(request.data.get("instructions") or ""),
+            build_body=lambda: templatize_document(
+                file_bytes=file_bytes,
+                filename=filename,
+                deal_type=deal_type,
+                instructions=instructions,
+            ),
         )
-        template = ContractTemplate.objects.create(
-            name=name, deal_type=deal_type, body=body, is_approved=False
-        )
-        return Response(
-            ContractTemplateSerializer(template).data, status=status.HTTP_201_CREATED
-        )
+        return Response(GenerationJobSerializer(job).data, status=status.HTTP_202_ACCEPTED)
+
+    @action(detail=False, methods=["get"], url_path="jobs/(?P<job_id>[0-9]+)")
+    def job(self, request, job_id=None):
+        """Poll an AI generation job (staff only). Terminal states carry
+        the resulting template id (done) or the error (failed)."""
+        job = GenerationJob.objects.filter(pk=job_id).first()
+        if job is None:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(GenerationJobSerializer(job).data)
 
     @action(detail=True, methods=["get"])
     def preview(self, request, pk=None):

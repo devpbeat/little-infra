@@ -20,6 +20,12 @@ from apps.contracts.models import ContractTemplate
 from apps.subscriptions.models import Plan
 
 
+@pytest.fixture(autouse=True)
+def _sync_generation_jobs(settings):
+    """Run AI generation jobs inline so tests are deterministic (no threads)."""
+    settings.GENERATION_JOBS_SYNC = True
+
+
 @pytest.fixture
 def contract_template(db):
     return ContractTemplate.objects.create(name="Standard SaaS Agreement", reference="tpl-standard")

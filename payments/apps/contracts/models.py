@@ -122,3 +122,36 @@ class Contract(models.Model):
 
     def __str__(self) -> str:
         return f"Contract#{self.pk} ({self.status})"
+
+
+class GenerationJob(models.Model):
+    """Tracks an async AI template generation/templatization request.
+
+    The HTTP request creates the job and returns immediately; a background
+    thread runs the Claude call and updates the job. The dashboard polls
+    the job until it reaches a terminal state. No task queue / broker — the
+    work is admin-only and low-frequency, so an in-process thread keeps the
+    "one service to maintain" property (decision 2026-09-21).
+    """
+
+    class Kind(models.TextChoices):
+        GENERATE = "generate", "Generate from scratch"
+        TEMPLATIZE = "templatize", "Templatize an uploaded document"
+
+    class Status(models.TextChoices):
+        RUNNING = "running", "Running"
+        DONE = "done", "Done"
+        FAILED = "failed", "Failed"
+
+    kind = models.CharField(max_length=16, choices=Kind.choices)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.RUNNING)
+    name = models.CharField(max_length=150)
+    result_template = models.ForeignKey(
+        ContractTemplate, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    error = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"GenerationJob#{self.pk} ({self.kind}, {self.status})"
