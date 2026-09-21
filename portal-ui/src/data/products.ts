@@ -8,6 +8,28 @@ export interface Product {
   initial: string;
 }
 
+export interface PricingTier {
+  name: string;
+  priceUsd: number;
+  description: string;
+  features: string[];
+  highlighted?: boolean;
+  badge?: string;
+}
+
+export interface DemoCredentials {
+  url: string;
+  username: string;
+  password: string;
+}
+
+export interface ProductDetail extends Product {
+  detailTagline: string;
+  featureChips: string[];
+  tiers: PricingTier[];
+  demo: DemoCredentials;
+}
+
 export const products: Product[] = [
   {
     slug: "docuseal",
@@ -42,3 +64,39 @@ export const products: Product[] = [
     initial: "N",
   },
 ];
+
+/** Placeholder pricing, feature and demo-credential data for product detail pages. */
+export const productDetails: Record<string, ProductDetail> = {
+  docuseal: {
+    ...products[0],
+    detailTagline: "Send, sign and store documents securely — on your own domain, with your own branding.",
+    featureChips: ["E-signatures", "Templates", "API"],
+    tiers: [
+      {
+        name: "Starter",
+        priceUsd: 12,
+        description: "For freelancers getting started",
+        features: ["Up to 50 envelopes/mo", "1 sender seat", "Email support"],
+      },
+      {
+        name: "Pro",
+        priceUsd: 29,
+        description: "For growing teams that sign often",
+        features: ["Unlimited envelopes", "5 sender seats", "Custom domain & branding", "Priority support"],
+        highlighted: true,
+        badge: "Most popular",
+      },
+      {
+        name: "Business",
+        priceUsd: 79,
+        description: "For regulated businesses",
+        features: ["Unlimited seats", "SSO & audit logs", "API & webhooks", "Dedicated instance"],
+      },
+    ],
+    demo: {
+      url: "demo.docuseal.ignite.app",
+      username: "demo@ignite.app",
+      password: "ignite-demo-2026",
+    },
+  },
+};
