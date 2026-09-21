@@ -834,3 +834,181 @@
   color: #d9483a;
   font-weight: 700;
 }
+
+/* Checkout / subscribe */
+
+.step-counter {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.checkout-intro {
+  padding: 24px 0 8px;
+}
+
+.checkout-heading {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.checkout-subheading {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+.checkout-section {
+  padding: 20px 0 56px;
+}
+
+.checkout-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.order-summary-card,
+.payment-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.order-summary-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.billing-cycle-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.billing-cycle-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.billing-cycle-toggle {
+  display: flex;
+  background: var(--bg-muted);
+  border-radius: var(--radius-pill);
+  padding: 4px;
+}
+
+.billing-cycle-toggle button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  padding: 10px;
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text-dim);
+}
+
+.billing-cycle-toggle button.active {
+  background: var(--bg-panel);
+  color: var(--text);
+  box-shadow: var(--shadow-card);
+}
+
+.save-badge {
+  padding: 2px 8px;
+  font-size: 11px;
+}
+
+.yearly-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--success);
+  font-weight: 600;
+}
+
+.order-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.order-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.order-breakdown-total {
+  color: var(--text);
+  font-weight: 800;
+  font-size: 15px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.payment-card-title {
+  margin: 0;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.card-brand-row {
+  display: flex;
+  gap: 8px;
+}
+
+.card-brand-chip {
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--bg-muted);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.payment-field-row {
+  display: flex;
+  gap: 12px;
+}
+
+.payment-field-row .form-field {
+  flex: 1;
+}
+
+.integration-note {
+  margin: 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tenant-provision-pill {
+  text-align: center;
+  padding: 10px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-muted);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.secure-payment-line {
+  text-align: center;
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-dim);
+}

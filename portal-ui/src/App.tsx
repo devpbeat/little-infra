@@ -1,5 +1,6 @@
 import { Route, Routes } from "react-router-dom";
 import { AdminProductsPage } from "./pages/AdminProductsPage";
+import { CheckoutPage } from "./pages/CheckoutPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -14,6 +15,7 @@ function App() {
       <Route path="/products/:slug" element={<ProductDetailPage />} />
       <Route path="/dashboard" element={<DashboardPage />} />
       <Route path="/admin/products" element={<AdminProductsPage />} />
+      <Route path="/checkout" element={<CheckoutPage />} />
     </Routes>
   );
 }
