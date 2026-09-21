@@ -605,3 +605,137 @@
   font-size: 13px;
   overflow-wrap: anywhere;
 }
+
+/* Customer dashboard */
+
+.dashboard-page {
+  padding-bottom: 88px;
+}
+
+.dashboard-header {
+  padding: 24px 0 8px;
+}
+
+.dashboard-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dashboard-greeting {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+.dashboard-name {
+  margin: 4px 0 0;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.avatar-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--text);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.dashboard-summary {
+  padding: 16px 0;
+}
+
+.summary-tile-row {
+  display: flex;
+  gap: 12px;
+}
+
+.summary-tile {
+  flex: 1;
+  text-align: center;
+}
+
+.summary-tile-filled {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.summary-tile-outlined {
+  background: var(--bg-panel);
+}
+
+.summary-tile-value {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.summary-tile-label {
+  margin: 4px 0 0;
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.my-apps-section {
+  padding: 16px 0 40px;
+}
+
+.app-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.app-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.app-card-top {
+  display: flex;
+  gap: 14px;
+}
+
+.app-icon-tile {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  font-size: 18px;
+}
+
+.app-card-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.app-card-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.app-card-title-row .product-name {
+  margin: 0;
+}
+
+.empty-hint-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  color: var(--text-dim);
+  font-size: 14px;
+}
