@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import { Badge, Button, Card, ProgressBar, TabBar } from "../components/ui";
 import { subscribedApps, tierBadgeTone } from "../data/subscriptions";
 
@@ -63,18 +62,19 @@ export function DashboardPage() {
                     <ProgressBar value={app.usagePercent} />
                   </div>
                 </div>
-                <Link to={`/products/${app.slug}`}>
-                  <Button className="full-width">Open app</Button>
-                </Link>
+                {/* TODO: deep-link to the provisioned tenant app instance once tenant provisioning exists. */}
+                <Button className="full-width" onClick={() => console.log("TODO: open tenant app", app.slug)}>
+                  Open app
+                </Button>
               </Card>
             ))}
           </div>
 
           <Card className="empty-hint-card">
             <p>Need another app? Your subscriptions will show up here.</p>
-            <Link to="/">
-              <Button variant="secondary">Browse marketplace</Button>
-            </Link>
+            <Button variant="secondary" to="/">
+              Browse marketplace
+            </Button>
           </Card>
         </div>
       </section>

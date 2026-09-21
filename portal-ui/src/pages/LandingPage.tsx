@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import { Badge, Button, Card, FlameLogo } from "../components/ui";
 import { products } from "../data/products";
 
@@ -16,9 +15,9 @@ export function LandingPage() {
       <header className="topnav">
         <div className="container topnav-inner">
           <FlameLogo />
-          <Link to="/login">
-            <Button size="sm">Login</Button>
-          </Link>
+          <Button size="sm" to="/login">
+            Login
+          </Button>
         </div>
       </header>
 

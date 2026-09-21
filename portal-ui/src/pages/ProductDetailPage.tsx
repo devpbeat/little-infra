@@ -12,9 +12,9 @@ export function ProductDetailPage() {
       <div className="page">
         <div className="container detail-not-found">
           <p>Product not found.</p>
-          <Link to="/">
-            <Button variant="secondary">Back to marketplace</Button>
-          </Link>
+          <Button variant="secondary" to="/">
+            Back to marketplace
+          </Button>
         </div>
       </div>
     );
@@ -81,11 +81,14 @@ export function ProductDetailPage() {
                     <li key={feature}>{feature}</li>
                   ))}
                 </ul>
-                <Link to="/checkout">
-                  <Button variant={tier.highlighted ? "primary" : "secondary"} className="full-width">
-                    Subscribe to {tier.name}
-                  </Button>
-                </Link>
+                <Button
+                  variant={tier.highlighted ? "primary" : "secondary"}
+                  className="full-width"
+                  to="/checkout"
+                  state={{ slug: product.slug, tierName: tier.name }}
+                >
+                  Subscribe to {tier.name}
+                </Button>
               </Card>
             ))}
           </div>
@@ -102,14 +105,14 @@ export function ProductDetailPage() {
               <CredentialRow label="USERNAME" value={product.demo.username} />
               <CredentialRow label="PASSWORD" value={product.demo.password} />
             </div>
-            <a
+            <Button
               className="full-width"
               href={`https://${product.demo.url}`}
               target="_blank"
               rel="noreferrer"
             >
-              <Button className="full-width">Open live demo</Button>
-            </a>
+              Open live demo
+            </Button>
           </Card>
         </div>
       </section>

@@ -13,17 +13,21 @@ primitives, `src/pages` route components). It does not share code with
 
 ## Current slice
 
-Only two routes exist so far:
+All routes are implemented as UI-only screens (see `src/App.tsx`):
 
 - `/` — Landing / Marketplace (product list, hardcoded placeholder pricing)
 - `/login` — Login / Sign up (UI only, no real auth yet)
+- `/products/:slug` — Product detail (plans, demo credentials)
+- `/dashboard` — Customer dashboard (subscribed apps, usage)
+- `/admin/products` — Admin product management
+- `/checkout` — Checkout (plan summary, payment form)
 
-Pricing, dashboard, admin, and checkout are out of scope for this slice.
-
-Authentication is currently a stub (`console.log` + TODO comments in
-`src/pages/LoginPage.tsx`). Real auth will be **Clerk (Organizations)**,
-wired in a later slice — do not add Clerk or any auth SDK before that slice
-is scoped.
+Authentication and payments are currently stubs (`console.log` + TODO
+comments across the pages, e.g. `src/pages/LoginPage.tsx`,
+`src/pages/CheckoutPage.tsx`, `src/pages/DashboardPage.tsx`). Real auth will
+be **Clerk (Organizations)** and real billing will go through the existing
+**Payments** service — both are wired in later slices. Do not add Clerk,
+Stripe, or any auth/payments SDK before those slices are scoped.
 
 ## Dev commands
 

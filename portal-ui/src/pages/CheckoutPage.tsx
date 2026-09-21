@@ -1,20 +1,37 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { Badge, Button, Card } from "../components/ui";
-import { productDetails } from "../data/products";
+import { productDetails, type PricingTier, type ProductDetail } from "../data/products";
 
-// Placeholder checkout data for DocuSeal Pro — a real checkout will read the
-// selected product/tier from route state once the subscribe flow is wired up.
-const product = productDetails.docuseal;
-const tier = product.tiers[1]; // Pro
-const MONTHLY_PRICE = tier.priceUsd;
-const YEARLY_PRICE = 278;
+interface CheckoutLocationState {
+  slug?: string;
+  tierName?: string;
+}
+
+const FALLBACK_PRODUCT = productDetails.docuseal;
+const FALLBACK_TIER = FALLBACK_PRODUCT.tiers[1]; // Pro
+
+function resolveSelection(state: CheckoutLocationState | null): { product: ProductDetail; tier: PricingTier } {
+  const product = (state?.slug && productDetails[state.slug]) || FALLBACK_PRODUCT;
+  const tier = product.tiers.find((candidate) => candidate.name === state?.tierName) ?? product.tiers[1] ?? product.tiers[0];
+  return { product, tier: tier ?? FALLBACK_TIER };
+}
+
+// Placeholder tax/yearly math — a real checkout will get these from the Payments API.
 const TAX_ESTIMATE = 2.61;
-const TOTAL_DUE_TODAY = MONTHLY_PRICE + TAX_ESTIMATE;
+const YEARLY_DISCOUNT_MONTHS_FREE = 2;
 
 type BillingCycle = "monthly" | "yearly";
 
 export function CheckoutPage() {
+  const location = useLocation();
+  const { product, tier } = useMemo(
+    () => resolveSelection(location.state as CheckoutLocationState | null),
+    [location.state],
+  );
+  const monthlyPrice = tier.priceUsd;
+  const yearlyPrice = Math.round(monthlyPrice * 12 * ((12 - YEARLY_DISCOUNT_MONTHS_FREE) / 12));
+  const totalDueToday = monthlyPrice + TAX_ESTIMATE;
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
 
   return (
@@ -68,14 +85,14 @@ export function CheckoutPage() {
                 </button>
               </div>
               {billingCycle === "yearly" && (
-                <p className="yearly-hint">${YEARLY_PRICE}/yr — that's 2+ months free</p>
+                <p className="yearly-hint">${yearlyPrice}/yr — that's {YEARLY_DISCOUNT_MONTHS_FREE}+ months free</p>
               )}
             </div>
 
             <div className="order-breakdown">
               <div className="order-breakdown-row">
                 <span>Subtotal · {tier.name}, monthly</span>
-                <span>${MONTHLY_PRICE.toFixed(2)}</span>
+                <span>${monthlyPrice.toFixed(2)}</span>
               </div>
               <div className="order-breakdown-row">
                 <span>Tax (est.)</span>
@@ -83,7 +100,7 @@ export function CheckoutPage() {
               </div>
               <div className="order-breakdown-row order-breakdown-total">
                 <span>Total due today</span>
-                <span>${TOTAL_DUE_TODAY.toFixed(2)}/mo</span>
+                <span>${totalDueToday.toFixed(2)}/mo</span>
               </div>
             </div>
           </Card>
@@ -143,7 +160,7 @@ export function CheckoutPage() {
             className="full-width"
             onClick={() => console.log("TODO: subscribe & provision — Payments API integration pending")}
           >
-            Subscribe & provision · ${TOTAL_DUE_TODAY.toFixed(2)}
+            Subscribe & provision · ${totalDueToday.toFixed(2)}
           </Button>
 
           <p className="tenant-provision-pill mono">
