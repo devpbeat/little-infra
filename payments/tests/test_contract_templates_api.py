@@ -55,9 +55,36 @@ class TestTemplateCrud:
             format="json",
         )
 
-        assert response.status_code == 201
-        assert response.data["is_approved"] is False
-        assert "{{client_name}}" in response.data["body"]
+        # Async: returns a job (running inline in tests → already done).
+        assert response.status_code == 202
+        job = staff_client.get(f"/api/v1/contract-templates/jobs/{response.data['id']}/")
+        assert job.data["status"] == "done"
+        template = staff_client.get(
+            f"/api/v1/contract-templates/{job.data['result_template']}/"
+        )
+        assert template.data["is_approved"] is False
+        assert "{{client_name}}" in template.data["body"]
+
+    def test_generate_failure_is_reported_on_the_job(self, staff_client, monkeypatch):
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+
+        def _boom(**kw):
+            raise RuntimeError("Anthropic exploded")
+
+        monkeypatch.setattr(
+            "adapters.anthropic_gen.generator.generate_template_body", _boom
+        )
+
+        response = staff_client.post(
+            "/api/v1/contract-templates/generate/",
+            {"name": "Doomed draft", "deal_type": "saas_subscription"},
+            format="json",
+        )
+        assert response.status_code == 202
+        job = staff_client.get(f"/api/v1/contract-templates/jobs/{response.data['id']}/")
+        assert job.data["status"] == "failed"
+        assert "Anthropic exploded" in job.data["error"]
+        assert job.data["result_template"] is None
 
     def test_generate_without_api_key_is_503(self, staff_client, monkeypatch):
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
@@ -164,9 +191,14 @@ class TestContractDocument:
             format="multipart",
         )
 
-        assert response.status_code == 201
-        assert response.data["is_approved"] is False
-        assert "{{client_name}}" in response.data["body"]
+        assert response.status_code == 202
+        job = staff_client.get(f"/api/v1/contract-templates/jobs/{response.data['id']}/")
+        assert job.data["status"] == "done"
+        template = staff_client.get(
+            f"/api/v1/contract-templates/{job.data['result_template']}/"
+        )
+        assert template.data["is_approved"] is False
+        assert "{{client_name}}" in template.data["body"]
 
     def test_builtin_click_sign_full_ceremony(self, provisioned_app, settings):
         settings.CONTRACT_SIGNER = "adapters.builtin_sign.signer.BuiltinClickSigner"

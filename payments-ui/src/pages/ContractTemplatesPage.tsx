@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "../components/ui/AppLayout";
 import { Badge, Button, Card } from "../components/ui";
@@ -12,6 +12,15 @@ interface TemplateRow {
   is_approved: boolean;
   is_active: boolean;
   updated_at: string;
+}
+
+interface GenerationJob {
+  id: number;
+  kind: string;
+  status: "running" | "done" | "failed";
+  name: string;
+  result_template: number | null;
+  error: string;
 }
 
 const DEAL_TYPES = [
@@ -58,6 +67,32 @@ export function ContractTemplatesPage() {
     onSuccess: (r) => setPreview(r.markdown),
   });
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  // AI generation is async: the POST returns a job immediately; we poll it.
+  const [activeJobId, setActiveJobId] = useState<number | null>(null);
+
+  const jobQuery = useQuery({
+    queryKey: ["generation-job", activeJobId],
+    queryFn: () => httpClient.get<GenerationJob>(`/contract-templates/jobs/${activeJobId}/`),
+    enabled: activeJobId !== null,
+    refetchInterval: (query) =>
+      query.state.data?.status === "running" ? 2000 : false,
+  });
+
+  useEffect(() => {
+    const job = jobQuery.data;
+    if (!job) return;
+    if (job.status === "done") {
+      invalidate();
+      if (job.result_template) setSelectedId(job.result_template);
+      setUploadFile(null);
+      setPreview(null);
+      setActiveJobId(null);
+    }
+    // On "failed" we keep activeJobId so the error stays visible until the
+    // next attempt; polling has already stopped (refetchInterval=false).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobQuery.data]);
+
   const templatize = useMutation({
     mutationFn: () => {
       const form = new FormData();
@@ -65,24 +100,19 @@ export function ContractTemplatesPage() {
       form.append("name", genForm.name);
       form.append("deal_type", genForm.deal_type);
       if (genForm.instructions) form.append("instructions", genForm.instructions);
-      return httpClient.postForm<TemplateRow>("/contract-templates/templatize/", form);
+      return httpClient.postForm<GenerationJob>("/contract-templates/templatize/", form);
     },
-    onSuccess: (created) => {
-      invalidate();
-      setSelectedId(created.id);
-      setUploadFile(null);
-      setPreview(null);
-    },
+    onSuccess: (job) => setActiveJobId(job.id),
   });
 
   const generate = useMutation({
-    mutationFn: () => httpClient.post<TemplateRow>("/contract-templates/generate/", genForm),
-    onSuccess: (created) => {
-      invalidate();
-      setSelectedId(created.id);
-      setPreview(null);
-    },
+    mutationFn: () => httpClient.post<GenerationJob>("/contract-templates/generate/", genForm),
+    onSuccess: (job) => setActiveJobId(job.id),
   });
+
+  const jobRunning = jobQuery.data?.status === "running" || (activeJobId !== null && !jobQuery.data);
+  const busy = generate.isPending || templatize.isPending || jobRunning;
+  const jobError = jobQuery.data?.status === "failed" ? jobQuery.data.error : null;
 
   return (
     <div>
@@ -124,8 +154,8 @@ export function ContractTemplatesPage() {
               onChange={(e) => setGenForm({ ...genForm, instructions: e.target.value })}
             />
           </label>
-          <Button disabled={generate.isPending || !genForm.name} onClick={() => generate.mutate()}>
-            {generate.isPending ? "Drafting… (~30s)" : "Generate draft"}
+          <Button disabled={busy || !genForm.name} onClick={() => generate.mutate()}>
+            {busy ? "Drafting…" : "Generate draft"}
           </Button>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 12 }}>
@@ -139,20 +169,30 @@ export function ContractTemplatesPage() {
           />
           <Button
             variant="secondary"
-            disabled={templatize.isPending || !uploadFile || !genForm.name}
+            disabled={busy || !uploadFile || !genForm.name}
             onClick={() => templatize.mutate()}
           >
-            {templatize.isPending ? "Templatizing… (~60s)" : "Upload & templatize"}
+            {busy ? "Working…" : "Upload & templatize"}
           </Button>
         </div>
-        {templatize.isError && (
-          <p style={{ color: "var(--danger, #f87171)", fontSize: 13 }}>
-            {templatize.error instanceof ApiError ? templatize.error.message : "Templatize failed."}
+        {jobRunning && (
+          <p style={{ color: "var(--text-dim)", fontSize: 13, marginTop: 8 }}>
+            Claude is drafting the document — this can take up to a minute. You can keep
+            working; the new template will appear when it's ready.
           </p>
         )}
-        {generate.isError && (
+        {(templatize.isError || generate.isError) && (
           <p style={{ color: "var(--danger, #f87171)", fontSize: 13 }}>
-            {generate.error instanceof ApiError ? generate.error.message : "Generation failed."}
+            {templatize.error instanceof ApiError
+              ? templatize.error.message
+              : generate.error instanceof ApiError
+                ? generate.error.message
+                : "Request failed."}
+          </p>
+        )}
+        {jobError && (
+          <p style={{ color: "var(--danger, #f87171)", fontSize: 13 }}>
+            Generation failed: {jobError}
           </p>
         )}
       </Card>
