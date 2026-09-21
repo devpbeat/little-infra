@@ -1,0 +1,45 @@
+# Deploys the portal stack (portal-ui, static site) on the VPS.
+#
+# Triggered via the Woodpecker API by GitHub Actions AFTER the GHCR image
+# push succeeds (see the trigger-deploy job in portal-ui-ci.yml) — same
+# build/deploy race rationale as payments.yml. Manual runs from the
+# Woodpecker UI work too: set the pipeline variable DEPLOY_TARGET=portal
+# when triggering.
+#
+# Unlike payments.yml, there is no migration step — portal-ui is a static
+# site with no database.
+#
+# NOTE: adjust the bind-mount path below if the server checkout of this
+# repo does not live at /home/ubuntu/little-infra (see README.md).
+when:
+  - event: manual
+    evaluate: 'DEPLOY_TARGET == "portal"'
+
+steps:
+  - name: deploy
+    image: docker:cli
+    volumes:
+      # Docker socket: lets this step drive the host's dockerd (same
+      # pattern the woodpecker-agent itself uses, see ci/docker-compose.yml).
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Bind-mount the server's actual checkout at the SAME path inside the
+      # step container — see payments.yml for the full rationale (relative
+      # paths in docker compose resolve against the HOST when issued over
+      # the socket).
+      - /home/ubuntu/little-infra:/home/ubuntu/little-infra
+    commands:
+      - cd /home/ubuntu/little-infra/portal
+      - |
+        echo "Pulling images (retrying — GHCR image may still be building in GitHub Actions)"
+        attempt=1
+        max_attempts=10
+        until docker compose pull; do
+          if [ "$attempt" -ge "$max_attempts" ]; then
+            echo "docker compose pull failed after ${max_attempts} attempts — giving up"
+            exit 1
+          fi
+          echo "pull failed (attempt ${attempt}/${max_attempts}), retrying in 15s..."
+          attempt=$((attempt + 1))
+          sleep 15
+        done
+      - docker compose up -d --remove-orphans

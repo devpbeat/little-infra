@@ -1,0 +1,31 @@
+services:
+  portal-ui:
+    image: ghcr.io/devpbeat/portal-ui:${PORTAL_UI_TAG:-latest}
+    container_name: portal-ui
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - platform
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.portal-ui.rule=Host(`portal.ignitesolutions.click`)
+      - traefik.http.routers.portal-ui.entrypoints=websecure
+      - traefik.http.routers.portal-ui.tls=true
+      - traefik.http.routers.portal-ui.tls.certresolver=myresolver
+      - traefik.http.routers.portal-ui.middlewares=secure-headers@file
+      - traefik.http.services.portal-ui.loadbalancer.server.port=80
+      - homepage.group=Services
+      - homepage.name=Portal
+      - homepage.href=https://portal.ignitesolutions.click
+      - homepage.description=Customer-facing marketplace and control panel
+
+networks:
+  # `platform` is the shared external network used by Traefik to route to
+  # this stack's services. It is created by platform/docker-compose.yml —
+  # `platform` must be deployed first, and PLATFORM_NETWORK must resolve to
+  # the same value used there (see payments/DEPLOY.md for the pattern this
+  # follows).
+  platform:
+    external: true
+    name: ${PLATFORM_NETWORK}
