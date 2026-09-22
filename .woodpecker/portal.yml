@@ -28,6 +28,10 @@ steps:
       # the socket).
       - /home/ubuntu/little-infra:/home/ubuntu/little-infra
     commands:
+      # Seed portal/.env from env.example before compose parses ${PLATFORM_NETWORK}.
+      # Non-interactive and idempotent — see scripts/ensure-env.sh. Any secret
+      # can be injected as a same-named Woodpecker pipeline variable.
+      - sh /home/ubuntu/little-infra/scripts/ensure-env.sh /home/ubuntu/little-infra/portal
       - cd /home/ubuntu/little-infra/portal
       - |
         echo "Pulling images (retrying — GHCR image may still be building in GitHub Actions)"
