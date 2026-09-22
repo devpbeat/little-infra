@@ -1,0 +1,10 @@
+# GitGuardian configuration
+# https://docs.gitguardian.com/ggshield-docs/reference/config
+version: 2
+
+secret:
+  ignored-paths:
+    # portal-ui demo sandbox credentials are intentionally public: they are
+    # displayed on the pricing page so anyone can try the shared demo, which
+    # resets every 24h. Not a real secret — scoped ignore to this data file only.
+    - portal-ui/src/data/products.ts
