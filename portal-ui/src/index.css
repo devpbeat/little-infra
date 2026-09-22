@@ -1,0 +1,56 @@
+:root {
+  --bg: #faf6f2;
+  --bg-panel: #ffffff;
+  --bg-muted: #f3ece5;
+  --border: #ece2d8;
+  --text: #1a1410;
+  --text-dim: #6b6058;
+  --accent: #ff5a1f;
+  --accent-hover: #e64f19;
+  --accent-soft: rgba(255, 90, 31, 0.12);
+  --success: #1f9d55;
+  --success-soft: rgba(31, 157, 85, 0.12);
+  --radius-card: 20px;
+  --radius-pill: 999px;
+  --shadow-card: 0 8px 24px rgba(26, 20, 16, 0.06);
+  --shadow-card-hover: 0 12px 32px rgba(26, 20, 16, 0.1);
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    "Plus Jakarta Sans",
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font-family: inherit;
+}
+
+code,
+.mono {
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+}

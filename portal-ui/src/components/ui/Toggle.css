@@ -1,0 +1,30 @@
+.toggle {
+  width: 44px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-muted);
+  border: none;
+  cursor: pointer;
+  padding: 3px;
+  display: flex;
+  align-items: center;
+  flex: none;
+  transition: background 0.15s ease;
+}
+
+.toggle-knob {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(26, 20, 16, 0.2);
+  transition: transform 0.15s ease;
+}
+
+.toggle-on {
+  background: var(--accent);
+}
+
+.toggle-on .toggle-knob {
+  transform: translateX(18px);
+}
