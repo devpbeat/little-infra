@@ -21,11 +21,10 @@ services:
       - homepage.description=Customer-facing marketplace and control panel
 
 networks:
-  # `platform` is the shared external network used by Traefik to route to
-  # this stack's services. It is created by platform/docker-compose.yml —
-  # `platform` must be deployed first, and PLATFORM_NETWORK must resolve to
-  # the same value used there (see payments/DEPLOY.md for the pattern this
-  # follows).
+  # The shared external network Traefik routes on (this VPS: traefik_web,
+  # per traefik/traefik.yml's docker provider). It already exists — it is
+  # NOT created by this compose file — so PLATFORM_NETWORK must name the
+  # same network payments and the other stacks use (see payments/DEPLOY.md).
   platform:
     external: true
     name: ${PLATFORM_NETWORK}
