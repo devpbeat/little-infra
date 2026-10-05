@@ -1,3 +1,4 @@
+import { OrganizationSwitcher, useUser } from "@clerk/react";
 import { Badge, Button, Card, ProgressBar, TabBar } from "../components/ui";
 import { subscribedApps, tierBadgeTone } from "../data/subscriptions";
 
@@ -9,17 +10,32 @@ const TAB_ITEMS = [
 ];
 
 export function DashboardPage() {
+  const { user } = useUser();
+  const firstName = user?.firstName ?? "there";
+  const initials =
+    [user?.firstName, user?.lastName]
+      .filter(Boolean)
+      .map((part) => part!.charAt(0).toUpperCase())
+      .join("") || "?";
+
   return (
     <div className="page dashboard-page">
       <header className="dashboard-header">
         <div className="container dashboard-header-inner">
           <div>
             <p className="dashboard-greeting">Good morning, 👋</p>
-            <h1 className="dashboard-name">Maria</h1>
+            <h1 className="dashboard-name">{firstName}</h1>
+            <div className="dashboard-org-switcher">
+              <OrganizationSwitcher hidePersonal={false} />
+            </div>
           </div>
-          <div className="avatar-circle" aria-hidden="true">
-            MR
-          </div>
+          {user?.imageUrl ? (
+            <img className="avatar-circle" src={user.imageUrl} alt={firstName} />
+          ) : (
+            <div className="avatar-circle" aria-hidden="true">
+              {initials}
+            </div>
+          )}
         </div>
       </header>
 

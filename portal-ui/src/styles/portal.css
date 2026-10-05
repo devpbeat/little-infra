@@ -645,6 +645,11 @@
   justify-content: center;
   font-weight: 700;
   font-size: 14px;
+  object-fit: cover;
+}
+
+.dashboard-org-switcher {
+  margin-top: 8px;
 }
 
 .dashboard-summary {
