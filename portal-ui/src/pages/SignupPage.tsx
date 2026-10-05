@@ -1,18 +1,18 @@
-import { SignIn } from "@clerk/react";
+import { SignUp } from "@clerk/react";
 import { FlameLogo } from "../components/ui";
 import { clerkAppearance } from "../lib/clerkAppearance";
 
-export function LoginPage() {
+export function SignupPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-header">
           <FlameLogo />
-          <h1>Welcome back 👋</h1>
-          <p>Log in to manage your apps, subscriptions and tenants.</p>
+          <h1>Create your account</h1>
+          <p>Set up access to manage your apps, subscriptions and tenants.</p>
         </div>
 
-        <SignIn routing="path" path="/login" signUpUrl="/signup" appearance={clerkAppearance} />
+        <SignUp routing="path" path="/signup" signInUrl="/login" appearance={clerkAppearance} />
       </div>
     </div>
   );
