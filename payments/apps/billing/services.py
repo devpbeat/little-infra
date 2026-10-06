@@ -1,4 +1,4 @@
-"""Billing domain services: payment confirmation and period extension.
+"""Billing domain services: payment confirmation, period extension, notification.
 
 Kept out of views.py so the webhook handler and any future reconciliation
 job (design §6 D1's "advance_billing" fallback) share exactly one
@@ -13,6 +13,7 @@ from django.utils import timezone
 from apps.subscriptions.models import Subscription, SubscriptionStatus
 from payments_core.ports.payment_gateway import ChargeStatus
 
+from .callbacks import notify_payment_confirmed
 from .models import Payment, PaymentStatus
 
 
@@ -44,7 +45,13 @@ def _confirm(payment: Payment) -> Payment:
     payment.status = PaymentStatus.CONFIRMED
     payment.confirmed_at = now
     payment.save(update_fields=["status", "confirmed_at", "updated_at"])
-    _extend_subscription_period(payment.subscription, now=now)
+    if payment.subscription_id is not None:
+        # Flow A only: a one-off tenant charge buys no subscription period.
+        _extend_subscription_period(payment.subscription, now=now)
+    # Flow B: the consuming app must learn the charge landed so it can mark
+    # its own installment PAID. Guarded by the same "already confirmed"
+    # early return above, so this fires at most once per Payment.
+    notify_payment_confirmed(payment)
     return payment
 
 
@@ -95,9 +102,13 @@ def process_webhook_status(gateway: str, gateway_order_id: str, gateway_status: 
     surfacing to the gateway as a failure).
     """
     payment = (
-        Payment.objects.select_for_update()
+        # `of=("self",)` locks ONLY the payment row. The related fields below
+        # are now nullable (a one-off charge has no subscription), which makes
+        # them LEFT JOINs, and Postgres refuses FOR UPDATE on the nullable
+        # side of an outer join.
+        Payment.objects.select_for_update(of=("self",))
         .filter(gateway=gateway, gateway_order_id=gateway_order_id)
-        .select_related("subscription__plan")
+        .select_related("subscription__plan", "app", "customer", "merchant_account")
         .first()
     )
     if payment is None:

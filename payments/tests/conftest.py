@@ -26,6 +26,17 @@ def _sync_generation_jobs(settings):
     settings.GENERATION_JOBS_SYNC = True
 
 
+@pytest.fixture(autouse=True)
+def _no_callback_dispatch(settings):
+    """Never let a test start a real outbound callback thread.
+
+    Delivery rows are still created, so idempotency/enqueue behaviour is
+    exercised; the HTTP leg is tested explicitly in
+    `tests/test_payment_callbacks.py` against a stubbed `post_json`.
+    """
+    settings.PAYMENT_CALLBACKS_DISPATCH = False
+
+
 @pytest.fixture
 def contract_template(db):
     return ContractTemplate.objects.create(name="Standard SaaS Agreement", reference="tpl-standard")

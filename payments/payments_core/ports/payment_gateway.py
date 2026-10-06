@@ -62,3 +62,15 @@ class PaymentGateway(Protocol):
     def verify_webhook(self, headers: dict, body: bytes) -> WebhookVerificationResult:
         """Verify an inbound webhook's authenticity and extract identifying fields."""
         ...
+
+    def peek_order_id(self, body: bytes) -> str | None:
+        """Return the CLAIMED, UNVERIFIED gateway order id in `body`, or None.
+
+        Exists solely so the webhook handler can pick WHICH merchant's
+        credentials to verify against (Flow B signs with the collecting
+        company's private key, not the SaaS owner's). The returned value is
+        attacker-controlled and must never be trusted for anything beyond
+        credential selection — verification afterwards still has to prove
+        knowledge of that merchant's private key.
+        """
+        ...

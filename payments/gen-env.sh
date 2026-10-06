@@ -31,6 +31,9 @@ DJANGO_SECRET_KEY=$(openssl rand -base64 60 | tr -d '\n')
 POSTGRES_PASSWORD=$(rand 24 32)
 DJANGO_SUPERUSER_PASSWORD=$(rand 18 24)
 WEBHOOK_PATH_TOKEN=$(rand 24 32)
+# Fernet key: urlsafe-base64 of exactly 32 random bytes, padding kept.
+# Encrypts per-tenant Pagopar private keys and per-app callback secrets.
+CREDENTIALS_ENCRYPTION_KEY=$(openssl rand -base64 32 | tr '+/' '-_')
 
 # Values only you know — prompt unless -y. Pagopar private key is read
 # silently (it is a credential, keep it out of terminal scrollback).
@@ -60,6 +63,7 @@ fill DJANGO_SUPERUSER_USERNAME "admin"
 fill DJANGO_SUPERUSER_EMAIL    "admin@ignitesolutions.click"
 fill DJANGO_SUPERUSER_PASSWORD "$DJANGO_SUPERUSER_PASSWORD"
 fill WEBHOOK_PATH_TOKEN        "$WEBHOOK_PATH_TOKEN"
+fill CREDENTIALS_ENCRYPTION_KEY "$CREDENTIALS_ENCRYPTION_KEY"
 fill PAGOPAR_PUBLIC_KEY        "$PAGOPAR_PUBLIC_KEY"
 fill PAGOPAR_PRIVATE_KEY       "$PAGOPAR_PRIVATE_KEY"
 fill ANTHROPIC_API_KEY         "$ANTHROPIC_API_KEY"
@@ -71,6 +75,8 @@ echo "Wrote $OUT (chmod 600). Generated secrets:"
 echo "  DJANGO_SUPERUSER_USERNAME = admin"
 echo "  DJANGO_SUPERUSER_PASSWORD = $DJANGO_SUPERUSER_PASSWORD"
 [[ -z "$PAGOPAR_PRIVATE_KEY" ]] && echo "  ! PAGOPAR_PRIVATE_KEY is blank — webhooks will reject EVERYTHING until it is set (fail-closed)."
+echo "  ! CREDENTIALS_ENCRYPTION_KEY was generated. BACK IT UP: losing it means every"
+echo "    stored per-tenant Pagopar private key must be re-entered by hand."
 [[ -z "$ANTHROPIC_API_KEY" ]] && echo "  ! ANTHROPIC_API_KEY is blank — contract template generation stays disabled until it is set."
 echo
 echo "Next: docker compose pull && docker compose up -d"

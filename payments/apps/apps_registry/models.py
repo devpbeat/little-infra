@@ -3,6 +3,8 @@ import secrets
 from django.db import models
 from django.utils import timezone
 
+from payments_core.crypto import decrypt_secret, encrypt_secret
+
 
 def _generate_key_secret() -> str:
     return secrets.token_urlsafe(32)
@@ -38,6 +40,30 @@ class ConsumingApp(models.Model):
         blank=True,
     )
     trial_days = models.PositiveIntegerField(default=30)
+
+    # Outbound confirmation callbacks (Flow B). When `callback_url` is set,
+    # every payment confirmation for this app is PUSHED to it, HMAC-signed
+    # with `callback_secret`. Blank url = this app polls instead.
+    callback_url = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text="HTTPS endpoint notified when a payment is confirmed. Blank disables callbacks.",
+    )
+    callback_secret_encrypted = models.TextField(
+        blank=True,
+        help_text="Fernet-encrypted HMAC shared secret. Never exposed via the API.",
+    )
+
+    def set_callback_secret(self, raw_secret: str) -> None:
+        """Encrypt and stage the shared signing secret. Caller must `save()`."""
+        self.callback_secret_encrypted = encrypt_secret(raw_secret)
+
+    def get_callback_secret(self) -> str:
+        return decrypt_secret(self.callback_secret_encrypted)
+
+    @property
+    def callbacks_enabled(self) -> bool:
+        return bool(self.callback_url and self.callback_secret_encrypted)
 
     def __str__(self) -> str:
         return self.name

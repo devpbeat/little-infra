@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "apps.apps_registry",
     "apps.customers",
+    "apps.merchants",
     "apps.contracts",
     "apps.subscriptions",
     "apps.billing",
@@ -128,6 +129,21 @@ SPECTACULAR_SETTINGS = {
 PAYMENT_GATEWAY = os.environ.get(
     "PAYMENT_GATEWAY", "adapters.fakes.fake_gateway.FakePaymentGateway"
 )
+
+# Symmetric key protecting secrets stored in the database (per-tenant Pagopar
+# private keys, per-app callback signing secrets). REQUIRED in any deployment
+# that uses Flow B. Generate with:
+#   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+CREDENTIALS_ENCRYPTION_KEY = os.environ.get("CREDENTIALS_ENCRYPTION_KEY", "")
+
+# Outbound confirmation callbacks. Dispatch can be turned off (tests, or an
+# operator draining a bad endpoint) without losing deliveries: rows are still
+# created and `manage.py dispatch_callbacks` picks them up later.
+PAYMENT_CALLBACKS_DISPATCH = (
+    os.environ.get("PAYMENT_CALLBACKS_DISPATCH", "true").lower() == "true"
+)
+# Deliver inline instead of on a daemon thread (management commands, tests).
+PAYMENT_CALLBACKS_SYNC = os.environ.get("PAYMENT_CALLBACKS_SYNC", "false").lower() == "true"
 
 # Contract signer adapter selection (Slice C wires the real value).
 CONTRACT_SIGNER = os.environ.get(

@@ -6,6 +6,251 @@
         "description": "B2B subscription billing, contract tracking, and payment processing."
     },
     "paths": {
+        "/api/v1/apps/": {
+            "get": {
+                "operationId": "v1_apps_list",
+                "description": "`GET /api/v1/apps/` + key issuance/revocation — staff sessions only.",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "description": "A page number within the paginated result set.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedConsumingAppList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/apps/{id}/": {
+            "get": {
+                "operationId": "v1_apps_retrieve",
+                "description": "`GET /api/v1/apps/` + key issuance/revocation — staff sessions only.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "A unique integer value identifying this consuming app.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConsumingApp"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/apps/{id}/customers/": {
+            "post": {
+                "operationId": "v1_apps_customers_create",
+                "description": "Staff creates a customer UNDER an explicit app — the admin\ncounterpart of the machine signup endpoint, sharing the same\nprovisioning (contract from the app's template + trial).",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "A unique integer value identifying this consuming app.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConsumingApp"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConsumingApp"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConsumingApp"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConsumingApp"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/apps/{id}/issue-key/": {
+            "post": {
+                "operationId": "v1_apps_issue_key_create",
+                "description": "`GET /api/v1/apps/` + key issuance/revocation — staff sessions only.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "A unique integer value identifying this consuming app.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConsumingApp"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConsumingApp"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConsumingApp"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConsumingApp"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/apps/{id}/revoke-key/": {
+            "post": {
+                "operationId": "v1_apps_revoke_key_create",
+                "description": "`GET /api/v1/apps/` + key issuance/revocation — staff sessions only.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "A unique integer value identifying this consuming app.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConsumingApp"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConsumingApp"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConsumingApp"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConsumingApp"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/auth/login": {
             "post": {
                 "operationId": "v1_auth_login_create",
@@ -58,6 +303,516 @@
                 "responses": {
                     "200": {
                         "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/charges": {
+            "post": {
+                "operationId": "v1_charges_create",
+                "description": "`POST /api/v1/charges` — Flow B: a tenant charges its OWN buyer.\n\nFlow A (`POST /api/v1/payments`) charges a SaaS subscription into the\nSaaS owner's Pagopar account. This endpoint charges an arbitrary positive\nPYG amount on behalf of one of the caller's own customers, and settles it\ninto the COLLECTING COMPANY's merchant account. `merchant_ref` is\nREQUIRED and has no default: running buyer payments on the global key\npair would pool every company's money into the SaaS owner's account, so a\nmissing, unknown, inactive or uncredentialed merchant account is a hard\n400 — never a silent fallback.\n\nIDEMPOTENT on `(app, external_ref)` — the caller's own reference for the\nthing being paid for. A double-clicked \"pay\" button or a retried timeout\nreturns the SAME pending payment (200) instead of creating a second\nPagopar order. A payment that never reached a terminal success (failed,\nexpired, or never got a gateway order) is re-issued on the SAME row\n(201), so a gateway outage does not permanently burn the reference.\nA repeat with a DIFFERENT amount is a 409: same reference, different\nmoney is a caller bug, and guessing which amount is right is worse than\nrefusing.",
+                "tags": [
+                    "v1"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChargeInitiation"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChargeInitiation"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChargeInitiation"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Payment"
+                                }
+                            }
+                        },
+                        "description": "Charge created (or re-issued after a previous failure). Send the buyer to `checkout_url`."
+                    },
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Payment"
+                                }
+                            }
+                        },
+                        "description": "Idempotent replay: a payment for this `external_ref` already exists with the same amount. Reuse its `checkout_url`."
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        },
+                        "description": "Validation error, or `merchant_ref` unknown/inactive/uncredentialed for this app."
+                    },
+                    "409": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        },
+                        "description": "`external_ref` already exists with a DIFFERENT `amount_pyg`."
+                    },
+                    "502": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        },
+                        "description": "Gateway rejected or was unreachable."
+                    }
+                }
+            }
+        },
+        "/api/v1/contract-templates/": {
+            "get": {
+                "operationId": "v1_contract_templates_list",
+                "description": "Full CRUD over contract templates — staff sessions only.\n\nMachines never edit legal documents: API keys cannot reach this\nsurface at all.",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "description": "A page number within the paginated result set.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedContractTemplateList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "v1_contract_templates_create",
+                "description": "Full CRUD over contract templates — staff sessions only.\n\nMachines never edit legal documents: API keys cannot reach this\nsurface at all.",
+                "tags": [
+                    "v1"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ContractTemplate"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ContractTemplate"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ContractTemplate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ContractTemplate"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/contract-templates/{id}/": {
+            "get": {
+                "operationId": "v1_contract_templates_retrieve",
+                "description": "Full CRUD over contract templates — staff sessions only.\n\nMachines never edit legal documents: API keys cannot reach this\nsurface at all.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "A unique integer value identifying this contract template.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ContractTemplate"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "put": {
+                "operationId": "v1_contract_templates_update",
+                "description": "Full CRUD over contract templates — staff sessions only.\n\nMachines never edit legal documents: API keys cannot reach this\nsurface at all.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "A unique integer value identifying this contract template.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ContractTemplate"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ContractTemplate"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ContractTemplate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ContractTemplate"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "v1_contract_templates_partial_update",
+                "description": "Full CRUD over contract templates — staff sessions only.\n\nMachines never edit legal documents: API keys cannot reach this\nsurface at all.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "A unique integer value identifying this contract template.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedContractTemplate"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedContractTemplate"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchedContractTemplate"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ContractTemplate"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "v1_contract_templates_destroy",
+                "description": "Full CRUD over contract templates — staff sessions only.\n\nMachines never edit legal documents: API keys cannot reach this\nsurface at all.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "A unique integer value identifying this contract template.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/contract-templates/{id}/preview/": {
+            "get": {
+                "operationId": "v1_contract_templates_preview_retrieve",
+                "description": "Render the template with SAMPLE data so the editor can preview.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "A unique integer value identifying this contract template.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ContractTemplate"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/contract-templates/generate/": {
+            "post": {
+                "operationId": "v1_contract_templates_generate_create",
+                "description": "AI-draft a template body with Claude (staff-triggered, reviewed).\n\nThe draft is saved with `is_approved=False` — it renders nothing\nfor real customers until a human approves it in the editor.",
+                "tags": [
+                    "v1"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ContractTemplate"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ContractTemplate"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ContractTemplate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ContractTemplate"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/contract-templates/jobs/{job_id}/": {
+            "get": {
+                "operationId": "v1_contract_templates_jobs_retrieve",
+                "description": "Poll an AI generation job (staff only). Terminal states carry\nthe resulting template id (done) or the error (failed).",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "job_id",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[0-9]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ContractTemplate"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/contract-templates/templatize/": {
+            "post": {
+                "operationId": "v1_contract_templates_templatize_create",
+                "description": "Upload an existing contract (PDF or markdown/text) and have\nClaude convert it into a placeholder template — saved unapproved.",
+                "tags": [
+                    "v1"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ContractTemplate"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ContractTemplate"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ContractTemplate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ContractTemplate"
+                                }
+                            }
+                        },
+                        "description": ""
                     }
                 }
             }
@@ -120,6 +875,105 @@
                 "tags": [
                     "v1"
                 ],
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Contract"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/contracts/{id}/document/": {
+            "get": {
+                "operationId": "v1_contracts_document_retrieve",
+                "description": "Rendered contract document (markdown) for this contract.\n\nApp-scoped like every contract route: a consuming app fetches this\nto show the digital contract to ITS customer (e.g. before DocuSign\nor in-app acceptance). 409s until the template has an approved body.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "A unique integer value identifying this contract.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Contract"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/contracts/{id}/send/": {
+            "post": {
+                "operationId": "v1_contracts_send_create",
+                "description": "Render the contract and create the e-signature envelope.\n\nUses the configured ContractSigner (DocuSeal in production) with\nthe rendered document; transitions generated→sent and returns the\npublic signing link for the consuming app to surface to its\ncustomer.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "A unique integer value identifying this contract.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Contract"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Contract"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Contract"
+                            }
+                        }
+                    }
+                },
                 "security": [
                     {
                         "ApiKeyAuth": []
@@ -348,6 +1202,26 @@
                 "tags": [
                     "v1"
                 ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PaymentInitiation"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PaymentInitiation"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PaymentInitiation"
+                            }
+                        }
+                    },
+                    "required": true
+                },
                 "security": [
                     {
                         "ApiKeyAuth": []
@@ -357,8 +1231,45 @@
                     }
                 ],
                 "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Payment"
+                                }
+                            }
+                        },
+                        "description": "New pending payment created."
+                    },
                     "200": {
-                        "description": "No response body"
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Payment"
+                                }
+                            }
+                        },
+                        "description": "An equivalent pending payment already existed."
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        },
+                        "description": "Subscription not found for this app."
+                    },
+                    "502": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        },
+                        "description": "Gateway rejected or was unreachable."
                     }
                 }
             }
@@ -505,13 +1416,86 @@
         "/api/v1/payments/result/{gateway_order_id}": {
             "get": {
                 "operationId": "v1_payments_result_retrieve",
-                "description": "`GET /api/v1/payments/result/<gateway_order_id>` — public, minimal.\n\nThe Pagopar checkout redirects the payer's browser here (via the\ndashboard's result page) with the order hash. Unauthenticated by\ndesign: the hash is an opaque, gateway-generated capability token,\nand the response exposes ONLY the payment status — no amounts, no\ncustomer data, nothing enumerable.",
+                "description": "`GET /api/v1/payments/result/<gateway_order_id>` — public, minimal.\n\nThe Pagopar checkout redirects the payer's browser here (via the\ndashboard's result page) with the order hash. Unauthenticated by\ndesign: the hash is an opaque, gateway-generated capability token,\nand the response exposes ONLY the payment status — no amounts, no\ncustomer data, nothing enumerable.\n\nKEPT PUBLIC FOR FLOW B, deliberately. The party who needs this route is\nthe BUYER's browser coming back from Pagopar, and a plot buyer holds no\nAPI key — requiring one would break the return page. The order hash is\nhigh-entropy and gateway-generated, so it is a capability token, and the\nonly thing it unlocks is a single enum. Consuming apps MUST NOT treat\nthis as authoritative: the authoritative, tenant-scoped reads are\n`GET /payments/{id}` and the signed confirmation callback.",
                 "parameters": [
                     {
                         "in": "path",
                         "name": "gateway_order_id",
                         "schema": {
                             "type": "string"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentResult"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        },
+                        "description": "Unknown gateway order hash."
+                    }
+                }
+            }
+        },
+        "/api/v1/public/contract-signing/{id}/": {
+            "get": {
+                "operationId": "v1_public_contract_signing_retrieve",
+                "description": "Public signing ceremony endpoints, addressed by the unguessable\nenvelope token (capability URL — knowing it IS the authorization).\n\nExposes only what the signer needs: the frozen document text and the\nacceptance action. No amounts beyond what the contract text itself\nstates, no ids, no cross-record access.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[-A-Za-z0-9_]+$"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
+        "/api/v1/public/contract-signing/{id}/sign/": {
+            "post": {
+                "operationId": "v1_public_contract_signing_sign_create",
+                "description": "Public signing ceremony endpoints, addressed by the unguessable\nenvelope token (capability URL — knowing it IS the authorization).\n\nExposes only what the signer needs: the frozen document text and the\nacceptance action. No amounts beyond what the contract text itself\nstates, no ids, no cross-record access.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[-A-Za-z0-9_]+$"
                         },
                         "required": true
                     }
@@ -661,7 +1645,17 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "No response body"
+                        "description": "Pagopar's `resultado` array, echoed verbatim."
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        },
+                        "description": "Signature verification failed."
                     }
                 }
             }
@@ -669,6 +1663,156 @@
     },
     "components": {
         "schemas": {
+            "ApiKey": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "prefix": {
+                        "type": "string",
+                        "maxLength": 16
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "last_used_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "revoked_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "created_at",
+                    "id",
+                    "prefix"
+                ]
+            },
+            "Buyer": {
+                "type": "object",
+                "description": "Buyer identity the gateway requires. Any field omitted falls back to the Customer.",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "default": "",
+                        "maxLength": 255
+                    },
+                    "email": {
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "format": "email",
+                                "default": ""
+                            },
+                            {
+                                "type": "string",
+                                "maxLength": 0
+                            }
+                        ]
+                    },
+                    "document": {
+                        "type": "string",
+                        "default": "",
+                        "maxLength": 32
+                    },
+                    "phone": {
+                        "type": "string",
+                        "default": "",
+                        "maxLength": 32
+                    }
+                }
+            },
+            "ChargeInitiation": {
+                "type": "object",
+                "description": "Input for `POST /charges` (Flow B): a tenant-scoped one-off charge.\n\n`external_ref` identifies the thing being paid for in the CALLER's own\nsystem (for yvyreta: an `Installment` pk) and is the idempotency key,\nunique per consuming app.",
+                "properties": {
+                    "external_ref": {
+                        "type": "string",
+                        "description": "Caller's reference for what is being paid (e.g. 'installment:4471'). Idempotency key, unique per app.",
+                        "maxLength": 255
+                    },
+                    "amount_pyg": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "description": "Amount in PYG. Integer — PYG has no subunits."
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Shown to the buyer at checkout.",
+                        "maxLength": 255
+                    },
+                    "customer_ref": {
+                        "type": "string",
+                        "description": "The buyer, by the caller's own reference. Created on first use.",
+                        "maxLength": 255
+                    },
+                    "merchant_ref": {
+                        "type": "string",
+                        "description": "REQUIRED. MerchantAccount.external_ref of the company collecting this money. There is no default: omitting it would settle a buyer's payment into the SaaS owner's account.",
+                        "maxLength": 255
+                    },
+                    "buyer": {
+                        "$ref": "#/components/schemas/Buyer"
+                    }
+                },
+                "required": [
+                    "amount_pyg",
+                    "customer_ref",
+                    "description",
+                    "external_ref",
+                    "merchant_ref"
+                ]
+            },
+            "ConsumingApp": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 150
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "trial_days": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": 0
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "api_keys": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ApiKey"
+                        },
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "api_keys",
+                    "created_at",
+                    "id",
+                    "name"
+                ]
+            },
             "Contract": {
                 "type": "object",
                 "properties": {
@@ -737,6 +1881,54 @@
                 "type": "string",
                 "description": "* `draft` - Draft\n* `generated` - Generated\n* `sent` - Sent\n* `signed` - Signed\n* `declined` - Declined\n* `voided` - Voided\n* `terminated` - Terminated"
             },
+            "ContractTemplate": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 150
+                    },
+                    "reference": {
+                        "type": "string",
+                        "description": "External template reference (e.g. e-signature provider template ID).",
+                        "maxLength": 255
+                    },
+                    "deal_type": {
+                        "$ref": "#/components/schemas/DealTypeEnum"
+                    },
+                    "body": {
+                        "type": "string",
+                        "description": "Markdown with {{placeholder}} variables (client_name, plan_name, ...)."
+                    },
+                    "is_approved": {
+                        "type": "boolean",
+                        "description": "Human-reviewed and cleared for rendering real contracts."
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "created_at",
+                    "id",
+                    "name",
+                    "updated_at"
+                ]
+            },
             "Customer": {
                 "type": "object",
                 "properties": {
@@ -761,6 +1953,23 @@
                         "type": "string",
                         "maxLength": 255
                     },
+                    "legal_name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "tax_id": {
+                        "type": "string",
+                        "description": "RUC or CI.",
+                        "maxLength": 32
+                    },
+                    "address": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "phone": {
+                        "type": "string",
+                        "maxLength": 32
+                    },
                     "created_at": {
                         "type": "string",
                         "format": "date-time",
@@ -781,6 +1990,54 @@
                     "external_ref",
                     "subscription"
                 ]
+            },
+            "DealTypeEnum": {
+                "enum": [
+                    "saas_subscription",
+                    "fixed_with_ownership",
+                    "fixed_hosted"
+                ],
+                "type": "string",
+                "description": "* `saas_subscription` - SaaS monthly/annual fee\n* `fixed_with_ownership` - Fixed price with code ownership\n* `fixed_hosted` - Fixed price without ownership, hosting provided"
+            },
+            "KindEnum": {
+                "enum": [
+                    "subscription",
+                    "one_off"
+                ],
+                "type": "string",
+                "description": "* `subscription` - SaaS subscription period\n* `one_off` - Tenant-scoped one-off charge"
+            },
+            "PaginatedConsumingAppList": {
+                "type": "object",
+                "required": [
+                    "count",
+                    "results"
+                ],
+                "properties": {
+                    "count": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "next": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=4"
+                    },
+                    "previous": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=2"
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ConsumingApp"
+                        }
+                    }
+                }
             },
             "PaginatedContractList": {
                 "type": "object",
@@ -809,6 +2066,37 @@
                         "type": "array",
                         "items": {
                             "$ref": "#/components/schemas/Contract"
+                        }
+                    }
+                }
+            },
+            "PaginatedContractTemplateList": {
+                "type": "object",
+                "required": [
+                    "count",
+                    "results"
+                ],
+                "properties": {
+                    "count": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "next": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=4"
+                    },
+                    "previous": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=2"
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ContractTemplate"
                         }
                     }
                 }
@@ -906,15 +2194,85 @@
                     }
                 }
             },
-            "Payment": {
+            "PatchedContractTemplate": {
                 "type": "object",
                 "properties": {
                     "id": {
                         "type": "integer",
                         "readOnly": true
                     },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 150
+                    },
+                    "reference": {
+                        "type": "string",
+                        "description": "External template reference (e.g. e-signature provider template ID).",
+                        "maxLength": 255
+                    },
+                    "deal_type": {
+                        "$ref": "#/components/schemas/DealTypeEnum"
+                    },
+                    "body": {
+                        "type": "string",
+                        "description": "Markdown with {{placeholder}} variables (client_name, plan_name, ...)."
+                    },
+                    "is_approved": {
+                        "type": "boolean",
+                        "description": "Human-reviewed and cleared for rendering real contracts."
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                }
+            },
+            "Payment": {
+                "type": "object",
+                "description": "The single read shape for both flows.\n\nIdentifiers are exposed as the CALLER's own references\n(`customer_ref`, `merchant_ref`) rather than our primary keys, so a\nconsuming app never has to store our ids to make sense of a payment.\nMerchant CREDENTIALS are not representable here — only the ref.",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "kind": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/KindEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "external_ref": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "Caller-supplied reference for the thing being paid for (e.g. an Installment pk). Doubles as the idempotency key, unique per app."
+                    },
+                    "customer_ref": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "merchant_ref": {
+                        "type": "string",
+                        "readOnly": true
+                    },
                     "subscription": {
                         "type": "integer",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Flow A only. NULL for a one-off tenant charge."
+                    },
+                    "description": {
+                        "type": "string",
                         "readOnly": true
                     },
                     "amount_pyg": {
@@ -964,13 +2322,53 @@
                     "checkout_url",
                     "confirmed_at",
                     "created_at",
+                    "customer_ref",
+                    "description",
+                    "external_ref",
                     "gateway",
                     "gateway_order_id",
                     "id",
+                    "kind",
+                    "merchant_ref",
                     "status",
                     "subscription",
                     "updated_at"
                 ]
+            },
+            "PaymentInitiation": {
+                "type": "object",
+                "description": "Input for `POST /payments` (Flow A): which subscription to pay for.",
+                "properties": {
+                    "subscription": {
+                        "type": "integer",
+                        "description": "Subscription id to initiate a payment for."
+                    }
+                },
+                "required": [
+                    "subscription"
+                ]
+            },
+            "PaymentResult": {
+                "type": "object",
+                "description": "The ONLY field the public result route exposes.",
+                "properties": {
+                    "status": {
+                        "$ref": "#/components/schemas/PaymentResultStatusEnum"
+                    }
+                },
+                "required": [
+                    "status"
+                ]
+            },
+            "PaymentResultStatusEnum": {
+                "enum": [
+                    "pending",
+                    "confirmed",
+                    "failed",
+                    "expired"
+                ],
+                "type": "string",
+                "description": "* `pending` - pending\n* `confirmed` - confirmed\n* `failed` - failed\n* `expired` - expired"
             },
             "PaymentStatusEnum": {
                 "enum": [
@@ -981,6 +2379,30 @@
                 ],
                 "type": "string",
                 "description": "* `pending` - Pending\n* `confirmed` - Confirmed\n* `failed` - Failed\n* `expired` - Expired"
+            },
+            "Problem": {
+                "type": "object",
+                "description": "The error body every endpoint returns (see `payments_core.exceptions`).\n\nPublished so callers branch on the machine-readable `code`, not on prose.",
+                "properties": {
+                    "type": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "detail": {
+                        "type": "string"
+                    },
+                    "code": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "code",
+                    "detail",
+                    "title",
+                    "type"
+                ]
             },
             "Subscription": {
                 "type": "object",
