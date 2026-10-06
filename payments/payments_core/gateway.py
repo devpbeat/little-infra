@@ -13,9 +13,16 @@ from django.utils.module_loading import import_string
 from payments_core.ports.payment_gateway import PaymentGateway
 
 
-def get_payment_gateway() -> PaymentGateway:
+def get_payment_gateway(credentials=None) -> PaymentGateway:
+    """Build the configured adapter, optionally bound to specific credentials.
+
+    `credentials=None` means "the global env key pair" — the Flow A
+    behaviour. Flow B passes the collecting company's
+    `GatewayCredentials` so the charge settles into THAT company's
+    merchant account (see `payments_core.merchant_credentials`).
+    """
     gateway_class = import_string(settings.PAYMENT_GATEWAY)
-    return gateway_class()
+    return gateway_class(credentials=credentials)
 
 
 def get_contract_signer():

@@ -21,8 +21,11 @@ class FakePaymentGateway(PaymentGateway):
 
     _counter = itertools.count(1)
 
-    def __init__(self) -> None:
+    def __init__(self, credentials=None) -> None:
         self._orders: dict[str, str] = {}
+        # Recorded so tests can assert WHICH merchant account a charge was
+        # created against (the Flow B compliance property).
+        self.credentials = credentials
 
     def create_charge(self, request: ChargeRequest) -> ChargeResult:
         gateway_order_id = f"fake-order-{next(self._counter)}"
@@ -39,6 +42,14 @@ class FakePaymentGateway(PaymentGateway):
     def set_status(self, gateway_order_id: str, status: str) -> None:
         """Test helper: force a charge into a given status."""
         self._orders[gateway_order_id] = status
+
+    def peek_order_id(self, body: bytes) -> str | None:
+        import json
+
+        try:
+            return json.loads(body).get("gateway_order_id")
+        except (ValueError, AttributeError):
+            return None
 
     def verify_webhook(self, headers: dict, body: bytes) -> WebhookVerificationResult:
         import json

@@ -13,10 +13,10 @@ functionality.
 import datetime
 import json
 import logging
-import os
 
 from django.utils import timezone
 
+from payments_core.merchant_credentials import GatewayCredentials, global_credentials
 from payments_core.ports.payment_gateway import (
     ChargeRequest,
     ChargeResult,
@@ -85,8 +85,28 @@ def _map_status(raw_status: str) -> str:
 
 
 class PagoparAdapter(PaymentGateway):
-    def __init__(self) -> None:
-        self._client = build_pagopar_client()
+    def __init__(self, credentials: GatewayCredentials | None = None) -> None:
+        """`credentials=None` uses the global env key pair (Flow A).
+
+        Flow B passes the collecting company's `GatewayCredentials` so both
+        the outbound charge AND the inbound webhook signature check use that
+        merchant's key rather than the SaaS owner's.
+        """
+        self._credentials = credentials or global_credentials()
+        self._client_cache = None
+
+    @property
+    def _client(self):
+        """Built lazily, on first OUTBOUND call.
+
+        `verify_webhook` needs only the private key, and an unconfigured
+        deployment must still be able to REJECT a webhook (fail closed,
+        review finding W4) rather than blow up constructing a client it
+        never uses.
+        """
+        if self._client_cache is None:
+            self._client_cache = build_pagopar_client(self._credentials)
+        return self._client_cache
 
     def create_charge(self, request: ChargeRequest) -> ChargeResult:
         """Create a Pagopar checkout/QR order for `request`.
@@ -182,8 +202,12 @@ class PagoparAdapter(PaymentGateway):
         ``numero_pedido``, ``monto``), the state booleans (``pagado``,
         ``cancelado``) and the signature (``token`` — see signature.py).
 
-        FAIL CLOSED (review finding W4): an unset/empty
-        `PAGOPAR_PRIVATE_KEY` always rejects.
+        Verified against THIS adapter's credentials — for a Flow B charge
+        that is the collecting company's private key, selected by the
+        webhook handler from the claimed order id before verification.
+
+        FAIL CLOSED (review finding W4): an unset/empty private key always
+        rejects.
         """
         try:
             payload = json.loads(body) if body else {}
@@ -198,7 +222,7 @@ class PagoparAdapter(PaymentGateway):
         numero_pedido = str(item.get("numero_pedido") or "")
         monto = str(item.get("monto") or "")
         provided_token = str(item.get("token") or "")
-        private_key = os.environ.get("PAGOPAR_PRIVATE_KEY", "")
+        private_key = self._credentials.private_key
 
         matched = None
         if hash_pedido:
@@ -229,3 +253,20 @@ class PagoparAdapter(PaymentGateway):
             gateway_order_id=hash_pedido or None,
             status=status,
         )
+
+    def peek_order_id(self, body: bytes) -> str | None:
+        """Claimed `hash_pedido`, UNVERIFIED — credential selection only.
+
+        See `PaymentGateway.peek_order_id`. This parses an unauthenticated
+        body on purpose: picking which merchant key to check a signature
+        against cannot itself require a verified signature.
+        """
+        try:
+            payload = json.loads(body) if body else {}
+        except ValueError:
+            return None
+        items = payload.get("resultado") if isinstance(payload, dict) else None
+        item = items[0] if isinstance(items, list) and items else {}
+        if not isinstance(item, dict):
+            return None
+        return str(item.get("hash_pedido") or "") or None
